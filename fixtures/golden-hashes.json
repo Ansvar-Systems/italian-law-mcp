@@ -1,0 +1,56 @@
+{
+  "$schema": "./golden-hashes.schema.json",
+  "version": "1.0",
+  "mcp_name": "Italian Law MCP",
+  "jurisdiction": "IT",
+  "provisions": [
+    {
+      "id": "it-hash-001",
+      "description": "Constitution Art. 15 -- inviolability of freedom and secrecy of correspondence and all other forms of communication",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:costituzione:1947-12-27~art15",
+      "selector_hint": "Art. 15 - Liberta e segretezza della corrispondenza",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "corrispondenza"
+    },
+    {
+      "id": "it-hash-002",
+      "description": "Codice Privacy (D.Lgs. 196/2003) Art. 1 -- right to personal data protection",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-06-30;196~art1",
+      "selector_hint": "Art. 1 - Diritto alla protezione dei dati personali",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "protezione dei dati personali"
+    },
+    {
+      "id": "it-hash-003",
+      "description": "Codice Penale Art. 615-ter -- unauthorized access to a computer or telecommunications system",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1930-10-19;1398~art615ter",
+      "selector_hint": "Art. 615-ter - Accesso abusivo ad un sistema informatico o telematico",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "sistema informatico"
+    },
+    {
+      "id": "it-hash-004",
+      "description": "Codice Civile Art. 1 -- legal capacity of natural persons acquired at birth",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1942-03-16;262~art1",
+      "selector_hint": "Art. 1 - Capacita giuridica",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "capacita giuridica"
+    },
+    {
+      "id": "it-hash-005",
+      "description": "CAD (D.Lgs. 82/2005) Art. 1 -- definitions of the Digital Administration Code",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-03-07;82~art1",
+      "selector_hint": "Art. 1 - Definizioni",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "definizioni"
+    },
+    {
+      "id": "it-hash-006",
+      "description": "D.Lgs. 231/2001 Art. 1 -- entities subject to corporate criminal liability provisions",
+      "upstream_url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2001-06-08;231~art1",
+      "selector_hint": "Art. 1 - Soggetti",
+      "expected_sha256": "COMPUTE_ON_FIRST_INGEST",
+      "expected_snippet": "enti"
+    }
+  ]
+}

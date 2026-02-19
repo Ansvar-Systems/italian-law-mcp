@@ -1,0 +1,56 @@
+# sources.yml
+schema_version: "1.0"
+mcp_name: "Italian Law MCP"
+jurisdiction: "IT"
+
+sources:
+  - name: "Normattiva (Official Italian Legal Database)"
+    authority: "Istituto Poligrafico e Zecca dello Stato / Presidenza del Consiglio dei Ministri"
+    official_portal: "https://www.normattiva.it"
+    canonical_identifier: "Gazzetta Ufficiale number and date, or legislative act type + number + year (e.g., D.Lgs. 196/2003)"
+    retrieval_method: "HTML_SCRAPE"
+    api_documentation: "N/A (structured HTML, no public API)"
+    update_frequency: "weekly"
+    last_ingested: "PENDING_FIRST_INGEST"
+    license_or_terms:
+      type: "Italian Government Open Data"
+      url: "https://www.normattiva.it/informazioni"
+      summary: "Italian legislation published on Normattiva is freely accessible; legal texts are public domain under Italian law; Normattiva provides consolidated (vigente) and historical versions of all legislative acts; reuse of legal text is unrestricted"
+    coverage:
+      scope: "All Italian legislation including Codice Privacy (D.Lgs. 196/2003 as amended by D.Lgs. 101/2018 for GDPR alignment), NIS2 transposition (D.Lgs. 138/2024), Codice Civile, Codice Penale (cybercrime Arts. 615-ter ff.), D.Lgs. 231/2001 (corporate criminal liability), CAD (Codice dell'Amministrazione Digitale, D.Lgs. 82/2005), Codice del Consumo (D.Lgs. 206/2005), D.Lgs. 70/2003 (e-commerce), and all decreti legislativi, decreti-legge, and leggi ordinarie"
+      limitations: "Regional legislation not covered; historical versions prior to digitisation may be incomplete; no public API (HTML scraping required); consolidated texts may lag behind latest Gazzetta Ufficiale publication; Italian language only (no official translations)"
+    languages:
+      - "it"
+
+data_freshness:
+  automated_checks: true
+  check_frequency: "weekly"
+  last_verified: "PENDING_FIRST_INGEST"
+
+# Notes:
+# - Normattiva (normattiva.it) is the authoritative, free source for all Italian
+#   legislation, operated jointly by the Istituto Poligrafico e Zecca dello Stato
+#   and the Presidenza del Consiglio dei Ministri
+# - Normattiva provides consolidated (vigente) versions with tracked amendments,
+#   making it ideal for ingestion of current law
+# - No public API exists; data must be obtained via structured HTML scraping
+# - Garante per la protezione dei dati personali (garante privacy) is Italy's DPA,
+#   one of the most active in Europe with significant enforcement actions
+# - Italy's Codice Privacy (D.Lgs. 196/2003) was substantially amended by D.Lgs.
+#   101/2018 to align with GDPR, retaining the original decreto structure but
+#   rewriting most substantive provisions
+# - D.Lgs. 231/2001 establishes corporate criminal liability (responsabilita
+#   amministrativa degli enti) -- unique Italian framework where companies can be
+#   held liable for crimes committed by employees, including cyber crimes
+# - Codice Penale Arts. 615-ter through 615-quinquies cover computer crimes:
+#   unauthorized access (615-ter), unauthorized possession of access credentials
+#   (615-quater), and distribution of malicious software (615-quinquies)
+# - CAD (Codice dell'Amministrazione Digitale, D.Lgs. 82/2005) governs digital
+#   government services, electronic identity (SPID/CIE), PEC (certified email),
+#   and digital document management
+# - NIS2 was transposed via D.Lgs. 138/2024, with ACN (Agenzia per la
+#   Cybersicurezza Nazionale) as the competent authority
+# - Italian Constitution Art. 15 guarantees the inviolability of freedom and
+#   secrecy of correspondence and communications
+# - The Gazzetta Ufficiale (Official Gazette) is the authoritative publication
+#   vehicle for all Italian legislation
