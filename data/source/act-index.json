@@ -1,0 +1,102 @@
+[
+  {
+    "title": "Codice in materia di protezione dei dati personali (Codice Privacy)",
+    "type": "dlgs",
+    "number": 196,
+    "year": 2003,
+    "date": "2003-06-30",
+    "urn": "urn:nir:stato:decreto.legislativo:2003-06-30;196",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-06-30;196",
+    "updated": ""
+  },
+  {
+    "title": "Adeguamento al Regolamento (UE) 2016/679 (GDPR alignment)",
+    "type": "dlgs",
+    "number": 101,
+    "year": 2018,
+    "date": "2018-08-10",
+    "urn": "urn:nir:stato:decreto.legislativo:2018-08-10;101",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2018-08-10;101",
+    "updated": ""
+  },
+  {
+    "title": "Attuazione della direttiva (UE) 2022/2555 (NIS2)",
+    "type": "dlgs",
+    "number": 138,
+    "year": 2024,
+    "date": "2024-09-04",
+    "urn": "urn:nir:stato:decreto.legislativo:2024-09-04;138",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2024-09-04;138",
+    "updated": ""
+  },
+  {
+    "title": "Codice Penale",
+    "type": "rd",
+    "number": 1398,
+    "year": 1930,
+    "date": "1930-10-19",
+    "urn": "urn:nir:stato:regio.decreto:1930-10-19;1398",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1930-10-19;1398",
+    "updated": ""
+  },
+  {
+    "title": "Codice Civile",
+    "type": "rd",
+    "number": 262,
+    "year": 1942,
+    "date": "1942-03-16",
+    "urn": "urn:nir:stato:regio.decreto:1942-03-16;262",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1942-03-16;262",
+    "updated": ""
+  },
+  {
+    "title": "Codice dell'Amministrazione Digitale (CAD)",
+    "type": "dlgs",
+    "number": 82,
+    "year": 2005,
+    "date": "2005-03-07",
+    "urn": "urn:nir:stato:decreto.legislativo:2005-03-07;82",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-03-07;82",
+    "updated": ""
+  },
+  {
+    "title": "Disciplina della responsabilità amministrativa delle persone giuridiche (D.Lgs. 231/2001)",
+    "type": "dlgs",
+    "number": 231,
+    "year": 2001,
+    "date": "2001-06-08",
+    "urn": "urn:nir:stato:decreto.legislativo:2001-06-08;231",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2001-06-08;231",
+    "updated": ""
+  },
+  {
+    "title": "Attuazione della direttiva 2000/31/CE (Commercio elettronico)",
+    "type": "dlgs",
+    "number": 70,
+    "year": 2003,
+    "date": "2003-04-09",
+    "urn": "urn:nir:stato:decreto.legislativo:2003-04-09;70",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-04-09;70",
+    "updated": ""
+  },
+  {
+    "title": "Codice del consumo (Consumer Code)",
+    "type": "dlgs",
+    "number": 206,
+    "year": 2005,
+    "date": "2005-09-06",
+    "urn": "urn:nir:stato:decreto.legislativo:2005-09-06;206",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-09-06;206",
+    "updated": ""
+  },
+  {
+    "title": "Disposizioni in materia di perimetro di sicurezza nazionale cibernetica",
+    "type": "dl",
+    "number": 105,
+    "year": 2019,
+    "date": "2019-09-21",
+    "urn": "urn:nir:stato:decreto-legge:2019-09-21;105",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto-legge:2019-09-21;105",
+    "updated": ""
+  }
+]

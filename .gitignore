@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.db
+!data/database.db
 .env
 .env.*
 .vercel
