@@ -123,6 +123,53 @@ Once connected, just ask naturally:
 
 ---
 
+## Key Legislation Covered
+
+| Law | Identifier | Domain | Key Topics |
+|-----|-----------|--------|------------|
+| **Codice Privacy** | D.Lgs. 196/2003 (amended by D.Lgs. 101/2018) | Data Protection | Personal data processing, Garante oversight, consent, data subject rights, GDPR implementation, international transfers |
+| **NIS2 Transposition** | D.Lgs. 138/2024 | Cybersecurity | Essential/important entity obligations, incident reporting, ACN oversight, supply chain security |
+| **Codice Penale (cybercrime)** | Arts. 615-ter to 615-quinquies | Cybercrime | Unauthorized access (615-ter), credential theft (615-quater), malware distribution (615-quinquies) |
+| **D.Lgs. 231/2001** | Corporate Criminal Liability | Corporate Governance | Organizational models, compliance programs, whistleblowing, cyber crime liability for companies |
+| **CAD** | D.Lgs. 82/2005 | Digital Administration | SPID/CIE digital identity, PEC certified email, digital documents, e-government services |
+| **Codice Civile** | R.D. 262/1942 | Civil Law | Legal capacity, obligations, contracts, property, personality rights |
+
+---
+
+---
+
+## Deployment Tier
+
+**MEDIUM** -- dual tier, free database bundled in npm package.
+
+| Tier | Platform | Database | Content |
+|------|----------|----------|---------|
+| **Free** | Vercel (Hobby) / npm (stdio) | Core legislation (~120-200 MB) | Key laws (Codice Privacy, Codice Penale cybercrime, Codice Civile, D.Lgs. 231/2001, CAD, NIS2 transposition), FTS search, EU cross-references |
+| **Professional** | Azure Container Apps / Docker / Local | Full database (~600 MB - 1 GB) | + All decreti legislativi and leggi, Garante decisions and guidance, Corte di Cassazione summaries, regional legislation references |
+
+The full database is larger due to the comprehensive scope of Italian legislation and the extensive body of Garante enforcement decisions. The free tier contains all key data protection, cybercrime, corporate liability, and digital administration legislation from Normattiva.
+
+---
+
+---
+
+## Database Estimates
+
+| Component | Free Tier | Full (Professional) |
+|-----------|-----------|---------------------|
+| Core codes and key laws | ~80-140 MB | ~80-140 MB |
+| All decreti and leggi | -- | ~400-600 MB |
+| Garante decisions and guidance | -- | ~80-150 MB |
+| Case law summaries | -- | ~80-150 MB |
+| Cross-references and metadata | ~5 MB | ~15 MB |
+| **Total** | **~120-200 MB** | **~600 MB - 1 GB** |
+
+**Delivery strategy:** Free-tier DB bundled in npm package (Strategy A -- fits within Vercel 250 MB function limit). If final size exceeds 250 MB after ingestion, switch to Strategy B (runtime download from GitHub Releases).
+
+---
+
+---
+
 ## Available Tools (13)
 
 ### Core Legal Research Tools (8)
