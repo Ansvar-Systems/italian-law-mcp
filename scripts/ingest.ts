@@ -2,14 +2,17 @@
 /**
  * Italian Law MCP — Ingestion Pipeline
  *
- * Two-phase ingestion of Italian legislation from normattiva.it:
- *   Phase 1 (Discovery): Build act index from known key laws
- *   Phase 2 (Content): Fetch HTML for each act, parse, and write seed JSON
+ * Article-by-article ingestion from normattiva.it:
+ *   1. For each key law, fetch the landing page to get session + TOC
+ *   2. Extract individual article URLs from the TOC
+ *   3. Fetch each article via the caricaArticolo AJAX endpoint
+ *   4. Parse AKN HTML to extract article number, heading, and text
+ *   5. Write seed JSON files for build-db.ts
  *
  * Usage:
  *   npm run ingest                    # Full ingestion
  *   npm run ingest -- --limit 5       # Test with 5 acts
- *   npm run ingest -- --skip-discovery # Reuse cached act index
+ *   npm run ingest -- --force         # Re-fetch even if seed exists
  *
  * Data is sourced from normattiva.it (Italian Government Open Data).
  */
@@ -17,15 +20,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchNormattivaAct } from './lib/fetcher.js';
-import { parseNormattivaHtml, buildNormattivaUrn, type ActIndexEntry, type ParsedAct } from './lib/parser.js';
+import { fetchAllArticles } from './lib/fetcher.js';
+import { parseArticleHtml, parseAttachmentArticleHtml, buildNormattivaUrn, type ActIndexEntry, type ParsedAct } from './lib/parser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SOURCE_DIR = path.resolve(__dirname, '../data/source');
 const SEED_DIR = path.resolve(__dirname, '../data/seed');
-const INDEX_PATH = path.join(SOURCE_DIR, 'act-index.json');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Known key Italian laws for cybersecurity/data protection/compliance scope
@@ -68,7 +69,7 @@ const KEY_LAWS: ActIndexEntry[] = [
     updated: '',
   },
   {
-    title: 'Codice dell\'Amministrazione Digitale (CAD)',
+    title: "Codice dell'Amministrazione Digitale (CAD)",
     type: 'dlgs', number: 82, year: 2005, date: '2005-03-07',
     urn: 'urn:nir:stato:decreto.legislativo:2005-03-07;82',
     url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-03-07;82',
@@ -108,128 +109,149 @@ const KEY_LAWS: ActIndexEntry[] = [
 // CLI argument parsing
 // ─────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(): { limit: number | null; skipDiscovery: boolean } {
+function parseArgs(): { limit: number | null; force: boolean } {
   const args = process.argv.slice(2);
   let limit: number | null = null;
-  let skipDiscovery = false;
+  let force = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && args[i + 1]) {
       limit = parseInt(args[i + 1], 10);
       i++;
-    } else if (args[i] === '--skip-discovery') {
-      skipDiscovery = true;
+    } else if (args[i] === '--force') {
+      force = true;
     }
   }
 
-  return { limit, skipDiscovery };
+  return { limit, force };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Phase 1: Discovery
+// Main ingestion
 // ─────────────────────────────────────────────────────────────────────────────
 
-function discoverActs(): ActIndexEntry[] {
-  console.log('Phase 1: Building act index from known key laws...\n');
+async function ingestAct(act: ActIndexEntry): Promise<{ provisions: number; failed: boolean }> {
+  const seedFile = path.join(SEED_DIR, `${act.type}_${act.number}_${act.year}.json`);
 
-  fs.mkdirSync(SOURCE_DIR, { recursive: true });
-  fs.writeFileSync(INDEX_PATH, JSON.stringify(KEY_LAWS, null, 2));
-  console.log(`  Index saved with ${KEY_LAWS.length} acts to ${INDEX_PATH}\n`);
+  try {
+    // Fetch all articles for this act
+    const articles = await fetchAllArticles(act.urn);
 
-  return KEY_LAWS;
+    if (articles.length === 0) {
+      console.log(`    WARNING: No articles fetched, writing empty seed`);
+      const emptySeed: ParsedAct = {
+        id: `${act.type}-${act.number}-${act.year}`,
+        type: act.type,
+        title: act.title,
+        short_name: act.title,
+        status: 'in_force',
+        issued_date: act.date,
+        url: act.url,
+        provisions: [],
+      };
+      fs.writeFileSync(seedFile, JSON.stringify(emptySeed, null, 2));
+      return { provisions: 0, failed: true };
+    }
+
+    // Parse each article
+    const provisions: Array<{ provision_ref: string; section: string; title: string; content: string }> = [];
+    const seenRefs = new Set<string>();
+
+    for (const article of articles) {
+      // Try AKN parser first (modern laws), then attachment parser (historical laws)
+      const parsed = parseArticleHtml(article.html) ?? parseAttachmentArticleHtml(article.html);
+      if (parsed && !seenRefs.has(parsed.provision_ref)) {
+        provisions.push(parsed);
+        seenRefs.add(parsed.provision_ref);
+      }
+    }
+
+    const seed: ParsedAct = {
+      id: `${act.type}-${act.number}-${act.year}`,
+      type: act.type,
+      title: act.title,
+      short_name: act.title,
+      status: 'in_force',
+      issued_date: act.date,
+      url: act.url,
+      provisions,
+    };
+
+    fs.writeFileSync(seedFile, JSON.stringify(seed, null, 2));
+    console.log(`    OK: ${provisions.length} provisions from ${articles.length} fetched articles`);
+    return { provisions: provisions.length, failed: false };
+
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log(`    ERROR: ${msg}`);
+
+    // Write empty seed so we don't block the build
+    const emptySeed: ParsedAct = {
+      id: `${act.type}-${act.number}-${act.year}`,
+      type: act.type,
+      title: act.title,
+      short_name: act.title,
+      status: 'in_force',
+      issued_date: act.date,
+      url: act.url,
+      provisions: [],
+    };
+    fs.writeFileSync(seedFile, JSON.stringify(emptySeed, null, 2));
+    return { provisions: 0, failed: true };
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Phase 2: Content
-// ─────────────────────────────────────────────────────────────────────────────
+async function main(): Promise<void> {
+  const { limit, force } = parseArgs();
 
-async function fetchAndParseActs(acts: ActIndexEntry[], limit: number | null): Promise<void> {
-  const toProcess = limit ? acts.slice(0, limit) : acts;
-  console.log(`Phase 2: Fetching content for ${toProcess.length} acts from normattiva.it...\n`);
+  console.log('Italian Law MCP — Ingestion Pipeline');
+  console.log('=====================================\n');
+  console.log('  Strategy: Article-by-article fetch via caricaArticolo AJAX');
+  if (limit) console.log(`  --limit ${limit}`);
+  if (force) console.log(`  --force (re-fetching all)`);
+  console.log('');
 
   fs.mkdirSync(SEED_DIR, { recursive: true });
 
+  const toProcess = limit ? KEY_LAWS.slice(0, limit) : KEY_LAWS;
+  let totalProvisions = 0;
   let processed = 0;
   let skipped = 0;
   let failed = 0;
-  let totalProvisions = 0;
 
   for (const act of toProcess) {
     const seedFile = path.join(SEED_DIR, `${act.type}_${act.number}_${act.year}.json`);
 
-    if (fs.existsSync(seedFile)) {
-      skipped++;
-      processed++;
-      continue;
-    }
-
-    try {
-      console.log(`  Fetching: ${act.title} (${act.type}-${act.number}-${act.year})...`);
-      const result = await fetchNormattivaAct(act.urn);
-
-      if (result.status !== 200) {
-        console.log(`    ERROR: HTTP ${result.status}`);
-        const minimalSeed: ParsedAct = {
-          id: `${act.type}-${act.number}-${act.year}`,
-          type: act.type,
-          title: act.title,
-          short_name: act.title,
-          status: 'in_force',
-          issued_date: act.date,
-          url: act.url,
-          provisions: [],
-        };
-        fs.writeFileSync(seedFile, JSON.stringify(minimalSeed, null, 2));
-        failed++;
-      } else {
-        const parsed = parseNormattivaHtml(result.body, act.type, act.number, act.year, act.title);
-        fs.writeFileSync(seedFile, JSON.stringify(parsed, null, 2));
-        totalProvisions += parsed.provisions.length;
-        console.log(`    OK: ${parsed.provisions.length} provisions`);
+    // Skip if seed exists and not forcing
+    if (!force && fs.existsSync(seedFile)) {
+      const existing = JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
+      if (existing.provisions && existing.provisions.length > 5) {
+        console.log(`  SKIP (cached, ${existing.provisions.length} provisions): ${act.title}`);
+        totalProvisions += existing.provisions.length;
+        skipped++;
+        processed++;
+        continue;
       }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.log(`    ERROR: ${msg}`);
-      failed++;
     }
 
+    console.log(`\n  [${processed + 1}/${toProcess.length}] ${act.title} (${act.type.toUpperCase()} ${act.number}/${act.year})`);
+    const result = await ingestAct(act);
+    totalProvisions += result.provisions;
+    if (result.failed) failed++;
     processed++;
+
+    // Pause between acts to be respectful
+    if (processed < toProcess.length) {
+      console.log('  Pausing 2s between acts...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 
-  console.log(`\nPhase 2 complete:`);
-  console.log(`  Processed: ${processed}`);
-  console.log(`  Skipped (cached): ${skipped}`);
-  console.log(`  Failed: ${failed}`);
+  console.log('\n\nIngestion complete:');
+  console.log(`  Acts processed: ${processed}`);
+  console.log(`  Acts skipped (cached): ${skipped}`);
+  console.log(`  Acts failed: ${failed}`);
   console.log(`  Total provisions: ${totalProvisions}`);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function main(): Promise<void> {
-  const { limit, skipDiscovery } = parseArgs();
-
-  console.log('Italian Law MCP — Ingestion Pipeline');
-  console.log('=====================================\n');
-
-  if (limit) console.log(`  --limit ${limit}`);
-  if (skipDiscovery) console.log(`  --skip-discovery`);
-  console.log('');
-
-  let acts: ActIndexEntry[];
-
-  if (skipDiscovery && fs.existsSync(INDEX_PATH)) {
-    console.log(`Using cached act index from ${INDEX_PATH}\n`);
-    acts = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
-    console.log(`  ${acts.length} acts in index\n`);
-  } else {
-    acts = discoverActs();
-  }
-
-  await fetchAndParseActs(acts, limit);
-
-  console.log('\nIngestion complete.');
 }
 
 main().catch(error => {
