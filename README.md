@@ -1,45 +1,86 @@
-# Italian Law MCP
+# Italian Law MCP Server
 
-[![npm](https://img.shields.io/npm/v/@ansvar/italian-law-mcp)](https://www.npmjs.com/package/@ansvar/italian-law-mcp)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![CI](https://github.com/Ansvar-Systems/italian-law-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ansvar-Systems/italian-law-mcp/actions/workflows/ci.yml)
-[![MCP Registry](https://img.shields.io/badge/MCP-Registry-green)](https://registry.modelcontextprotocol.io/)
-[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/Ansvar-Systems/italian-law-mcp)](https://securityscorecards.dev/viewer/?uri=github.com/Ansvar-Systems/italian-law-mcp)
+**The Normattiva alternative for the AI age.**
 
-A Model Context Protocol (MCP) server providing comprehensive access to Italian legislation, including data protection (Codice Privacy / GDPR), cybercrime (Codice Penale), corporate liability (D.Lgs. 231/2001), digital administration (CAD), and NIS2 transposition with Italian full-text search.
+[![npm version](https://badge.fury.io/js/%40ansvar/italian-law-mcp.svg)](https://www.npmjs.com/package/@ansvar/italian-law-mcp)
+[![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub stars](https://img.shields.io/github/stars/Ansvar-Systems/Italian-law-mcp?style=social)](https://github.com/Ansvar-Systems/Italian-law-mcp)
+[![CI](https://github.com/Ansvar-Systems/Italian-law-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ansvar-Systems/Italian-law-mcp/actions/workflows/ci.yml)
 
-**MCP Registry:** `eu.ansvar/italian-law-mcp`
-**npm:** `@ansvar/italian-law-mcp`
-**License:** Apache-2.0
+Query **Italian legislation** -- covering data protection, cybersecurity, corporate law, and more -- directly from Claude, Cursor, or any MCP-compatible client.
 
----
+If you're building legal tech, compliance tools, or doing Italian legal research, this is your verified reference database.
 
-## Deployment Tier
-
-**MEDIUM** -- dual tier, free database bundled in npm package.
-
-| Tier | Platform | Database | Content |
-|------|----------|----------|---------|
-| **Free** | Vercel (Hobby) / npm (stdio) | Core legislation (~120-200 MB) | Key laws (Codice Privacy, Codice Penale cybercrime, Codice Civile, D.Lgs. 231/2001, CAD, NIS2 transposition), FTS search, EU cross-references |
-| **Professional** | Azure Container Apps / Docker / Local | Full database (~600 MB - 1 GB) | + All decreti legislativi and leggi, Garante decisions and guidance, Corte di Cassazione summaries, regional legislation references |
-
-The full database is larger due to the comprehensive scope of Italian legislation and the extensive body of Garante enforcement decisions. The free tier contains all key data protection, cybercrime, corporate liability, and digital administration legislation from Normattiva.
+Built by [Ansvar Systems](https://ansvar.eu) -- Stockholm, Sweden
 
 ---
 
-## Data Sources
+## Why This Exists
 
-| Source | Authority | Method | Update Frequency | License | Coverage |
-|--------|-----------|--------|-----------------|---------|----------|
-| [Normattiva](https://www.normattiva.it) | Istituto Poligrafico e Zecca dello Stato | HTML Scrape | Weekly | Government Open Data | All Italian legislation (consolidated and historical versions), codes, decreti, and leggi |
+Italian legal research is scattered across official government databases, commercial legal platforms, and institutional archives. Whether you're:
+- A **lawyer** validating citations in a brief or contract
+- A **compliance officer** checking if a statute is still in force
+- A **legal tech developer** building tools on Italian law
+- A **researcher** tracing legislative history
 
-> Full provenance metadata: [`sources.yml`](./sources.yml)
+...you shouldn't need dozens of browser tabs and manual PDF cross-referencing. Ask Claude. Get the exact provision. With context.
+
+This MCP server makes Italian law **searchable, cross-referenceable, and AI-readable**.
 
 ---
 
 ## Quick Start
 
-### Claude Desktop / Cursor (stdio)
+### Use Remotely (No Install Needed)
+
+> Connect directly to the hosted version -- zero dependencies, nothing to install.
+
+**Endpoint:** `https://italian-law-mcp.vercel.app/mcp`
+
+| Client | How to Connect |
+|--------|---------------|
+| **Claude.ai** | Settings > Connectors > Add Integration > paste URL |
+| **Claude Code** | `claude mcp add italian-law --transport http https://italian-law-mcp.vercel.app/mcp` |
+| **Claude Desktop** | Add to config (see below) |
+| **GitHub Copilot** | Add to VS Code settings (see below) |
+
+**Claude Desktop** -- add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "italian-law": {
+      "type": "url",
+      "url": "https://italian-law-mcp.vercel.app/mcp"
+    }
+  }
+}
+```
+
+**GitHub Copilot** -- add to VS Code `settings.json`:
+
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "italian-law": {
+      "type": "http",
+      "url": "https://italian-law-mcp.vercel.app/mcp"
+    }
+  }
+}
+```
+
+### Use Locally (npm)
+
+```bash
+npx @ansvar/italian-law-mcp
+```
+
+**Claude Desktop** -- add to `claude_desktop_config.json`:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -52,194 +93,245 @@ The full database is larger due to the comprehensive scope of Italian legislatio
 }
 ```
 
-### Vercel Streamable HTTP (ChatGPT / Claude.ai)
+**Cursor / VS Code:**
 
-Once deployed, the public endpoint will be available at:
-
-```
-https://italian-law-mcp.vercel.app/api/mcp
-```
-
----
-
-## Tools
-
-| Tool | Description | Free Tier | Professional |
-|------|-------------|-----------|-------------|
-| `get_provision` | Retrieve a specific article from an Italian law or code | Yes | Yes |
-| `search_legislation` | Full-text search across all Italian legislation (Italian) | Yes | Yes |
-| `list_laws` | List all available laws with metadata | Yes | Yes |
-| `get_law_structure` | Get table of contents / structure of a law or code | Yes | Yes |
-| `get_provision_eu_basis` | Cross-reference Italian law to EU directives/regulations | Yes | Yes |
-| `search_decreti` | Search decreti legislativi and decreti-legge | No (upgrade) | Yes |
-| `get_garante_guidance` | Retrieve Garante decisions and guidance | No (upgrade) | Yes |
-
----
-
-## Key Legislation Covered
-
-| Law | Identifier | Domain | Key Topics |
-|-----|-----------|--------|------------|
-| **Codice Privacy** | D.Lgs. 196/2003 (amended by D.Lgs. 101/2018) | Data Protection | Personal data processing, Garante oversight, consent, data subject rights, GDPR implementation, international transfers |
-| **NIS2 Transposition** | D.Lgs. 138/2024 | Cybersecurity | Essential/important entity obligations, incident reporting, ACN oversight, supply chain security |
-| **Codice Penale (cybercrime)** | Arts. 615-ter to 615-quinquies | Cybercrime | Unauthorized access (615-ter), credential theft (615-quater), malware distribution (615-quinquies) |
-| **D.Lgs. 231/2001** | Corporate Criminal Liability | Corporate Governance | Organizational models, compliance programs, whistleblowing, cyber crime liability for companies |
-| **CAD** | D.Lgs. 82/2005 | Digital Administration | SPID/CIE digital identity, PEC certified email, digital documents, e-government services |
-| **Codice Civile** | R.D. 262/1942 | Civil Law | Legal capacity, obligations, contracts, property, personality rights |
-
----
-
-## Database Estimates
-
-| Component | Free Tier | Full (Professional) |
-|-----------|-----------|---------------------|
-| Core codes and key laws | ~80-140 MB | ~80-140 MB |
-| All decreti and leggi | -- | ~400-600 MB |
-| Garante decisions and guidance | -- | ~80-150 MB |
-| Case law summaries | -- | ~80-150 MB |
-| Cross-references and metadata | ~5 MB | ~15 MB |
-| **Total** | **~120-200 MB** | **~600 MB - 1 GB** |
-
-**Delivery strategy:** Free-tier DB bundled in npm package (Strategy A -- fits within Vercel 250 MB function limit). If final size exceeds 250 MB after ingestion, switch to Strategy B (runtime download from GitHub Releases).
-
----
-
-## Regulatory Context
-
-- **Supervisory Authority:** Garante per la protezione dei dati personali -- very active enforcement, significant fines and corrective measures
-- **Codice Privacy** (D.Lgs. 196/2003) was substantially amended by D.Lgs. 101/2018 to implement GDPR, retaining the original decreto structure
-- **D.Lgs. 231/2001** is a uniquely Italian framework establishing corporate criminal liability, including for cyber crimes -- critical for compliance programs
-- **ACN** (Agenzia per la Cybersicurezza Nazionale) is the national cybersecurity authority overseeing NIS2 compliance
-- **SPID** and **CIE** provide national digital identity infrastructure, governed by CAD
-- **Normattiva** provides consolidated (vigente) versions with amendment tracking
-- Italy is a founding EU member and GDPR compliance is a core regulatory requirement
-
----
-
-## Development
-
-```bash
-# Clone the repository
-git clone https://github.com/Ansvar-Systems/italian-law-mcp.git
-cd italian-law-mcp
-
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Run tests
-npm test
-
-# Run contract tests
-npm run test:contract
-
-# Build database (requires raw data in data/ directory)
-npm run build:db
-
-# Build free-tier database
-npm run build:db:free
-
-# Run drift detection
-npm run drift:detect
-
-# Full validation
-npm run validate
+```json
+{
+  "mcp.servers": {
+    "italian-law": {
+      "command": "npx",
+      "args": ["-y", "@ansvar/italian-law-mcp"]
+    }
+  }
+}
 ```
 
 ---
 
-## Architecture
+## Example Queries
 
-```
-italian-law-mcp/
-├── .github/
-│   ├── workflows/
-│   │   ├── ci.yml                    # Test + lint + security scan
-│   │   ├── publish.yml               # npm publish on version tags
-│   │   ├── check-source-updates.yml  # Data freshness monitoring
-│   │   └── drift-detect.yml          # Upstream drift detection
-│   ├── SECURITY.md
-│   ├── SECURITY-SETUP.md
-│   └── ISSUE_TEMPLATE/
-│       └── data-error.md
-├── data/
-│   └── .gitkeep
-├── fixtures/
-│   ├── golden-tests.json             # 12 contract tests
-│   ├── golden-hashes.json            # 6 drift detection anchors
-│   └── README.md
-├── scripts/
-│   ├── build-db.ts
-│   ├── build-db-free.ts
-│   ├── download-free-db.sh
-│   ├── ingest.ts
-│   ├── drift-detect.ts
-│   └── check-source-updates.ts
-├── src/
-│   ├── server.ts
-│   ├── db.ts
-│   └── tools/
-│       ├── get-provision.ts
-│       ├── search-legislation.ts
-│       ├── list-laws.ts
-│       ├── get-law-structure.ts
-│       ├── get-provision-eu-basis.ts
-│       ├── search-decreti.ts
-│       └── get-garante-guidance.ts
-├── __tests__/
-│   ├── unit/
-│   ├── contract/
-│   │   └── golden.test.ts
-│   └── integration/
-├── sources.yml
-├── server.json
-├── package.json
-├── tsconfig.json
-├── vercel.json
-├── CHANGELOG.md
-├── LICENSE
-└── README.md
-```
+Once connected, just ask naturally:
+
+- *"What does the Italian data protection law say about consent?"*
+- *"Search for cybersecurity requirements in Italian legislation"*
+- *"Is this statute still in force?"*
+- *"Find provisions about personal data in Italian law"*
+- *"What EU directives does this Italian law implement?"*
+- *"Which Italian laws implement the GDPR?"*
+- *"Validate this legal citation"*
+- *"Build a legal stance on data breach notification requirements"*
 
 ---
 
-## Notes on Italian Data Protection Landscape
+## Available Tools (13)
 
-**Codice Privacy** (D.Lgs. 196/2003) was one of the first comprehensive data protection laws in the EU:
+### Core Legal Research Tools (8)
 
-- Amended by **D.Lgs. 101/2018** to align with GDPR, retaining the original legislative structure
-- **Garante** is one of the most active DPAs in Europe with significant enforcement actions
-- Italy maintains **additional protections** for health data, genetic data, and judicial data beyond GDPR minimums
+| Tool | Description |
+|------|-------------|
+| `search_legislation` | FTS5 full-text search across all provisions with BM25 ranking |
+| `get_provision` | Retrieve specific provision by statute + chapter/section |
+| `check_currency` | Check if statute is in force, amended, or repealed |
+| `validate_citation` | Validate citation against database (zero-hallucination check) |
+| `build_legal_stance` | Aggregate citations from statutes for a legal topic |
+| `format_citation` | Format citations per Italian conventions (full/short/pinpoint) |
+| `list_sources` | List all available statutes with metadata |
+| `about` | Server info, capabilities, and coverage summary |
 
-**D.Lgs. 231/2001** (Corporate Criminal Liability) is unique and critical:
-- Companies can be held **criminally liable** for crimes committed by employees
-- Includes **cyber crimes** (Arts. 24-bis) -- unauthorized access, data damage, computer fraud
-- Requires **organizational models** (modelli organizzativi) for compliance
-- Companies must demonstrate **adequate prevention measures** to avoid liability
+### EU/International Law Integration Tools (5)
 
-Italy is the **EU's third largest economy** and GDPR compliance combined with D.Lgs. 231/2001 organizational models creates a distinctive compliance landscape.
+| Tool | Description |
+|------|-------------|
+| `get_eu_basis` | Get EU directives/regulations for Italian statute |
+| `get_italian_law_implementations` | Find Italian laws implementing EU act |
+| `search_eu_implementations` | Search EU documents with Italian implementation counts |
+| `get_provision_eu_basis` | Get EU law references for specific provision |
+| `validate_eu_compliance` | Check implementation status of EU directives |
 
 ---
 
-## Related Documents
+## Why This Works
 
-- [MCP Quality Standard](../../mcp-quality-standard.md) -- quality requirements for all Ansvar MCPs
-- [MCP Infrastructure Blueprint](../../mcp-infrastructure-blueprint.md) -- infrastructure implementation templates
-- [MCP Deployment Tiers](../../mcp-deployment-tiers.md) -- free vs. professional tier strategy
-- [MCP Server Registry](../../mcp-server-registry.md) -- operational registry of all MCPs
-- [MCP Remote Access](../../mcp-remote-access.md) -- public Vercel endpoint URLs
+**Verbatim Source Text (No LLM Processing):**
+- All statute text is ingested from official Italian government sources
+- Provisions are returned **unchanged** from SQLite FTS5 database rows
+- Zero LLM summarization or paraphrasing -- the database contains regulation text, not AI interpretations
+
+**Smart Context Management:**
+- Search returns ranked provisions with BM25 scoring (safe for context)
+- Provision retrieval gives exact text by statute identifier + chapter/section
+- Cross-references help navigate without loading everything at once
+
+**Technical Architecture:**
+```
+Official Sources --> Parse --> SQLite --> FTS5 snippet() --> MCP response
+                     ^                       ^
+              Provision parser         Verbatim database query
+```
+
+### Traditional Research vs. This MCP
+
+| Traditional Approach | This MCP Server |
+|---------------------|-----------------|
+| Search official databases by statute number | Search by plain language |
+| Navigate multi-chapter statutes manually | Get the exact provision with context |
+| Manual cross-referencing between laws | `build_legal_stance` aggregates across sources |
+| "Is this statute still in force?" --> check manually | `check_currency` tool --> answer in seconds |
+| Find EU basis --> dig through EUR-Lex | `get_eu_basis` --> linked EU directives instantly |
+| No API, no integration | MCP protocol --> AI-native |
+
+---
+
+## Data Sources & Freshness
+
+All content is sourced from authoritative Italian legal databases:
+
+- **[Normattiva](https://www.normattiva.it)** -- Official Italian government legal database
+
+**Verified data only** -- every citation is validated against official sources. Zero LLM-generated content.
 
 ---
 
 ## Security
 
-Report vulnerabilities to **security@ansvar.eu** (48-hour acknowledgment SLA).
+This project uses multiple layers of automated security scanning:
 
-See [SECURITY.md](.github/SECURITY.md) for full disclosure policy.
+| Scanner | What It Does | Schedule |
+|---------|-------------|----------|
+| **CodeQL** | Static analysis for security vulnerabilities | Weekly + PRs |
+| **Semgrep** | SAST scanning (OWASP top 10, secrets, TypeScript) | Every push |
+| **Gitleaks** | Secret detection across git history | Every push |
+| **Trivy** | CVE scanning on filesystem and npm dependencies | Daily |
+| **Socket.dev** | Supply chain attack detection | PRs |
+| **Dependabot** | Automated dependency updates | Weekly |
+
+See [SECURITY.md](SECURITY.md) for the full policy and vulnerability reporting.
 
 ---
 
-**Maintained by:** Ansvar Systems Engineering
-**Contact:** hello@ansvar.eu
+## Important Disclaimers
+
+### Legal Advice
+
+> **THIS TOOL IS NOT LEGAL ADVICE**
+>
+> Statute text is sourced from official Italian government publications. However:
+> - This is a **research tool**, not a substitute for professional legal counsel
+> - **Court case coverage is limited** -- do not rely solely on this for case law research
+> - **Verify critical citations** against primary sources for court filings
+> - **EU cross-references** are extracted from statute text, not EUR-Lex full text
+
+**Before using professionally, read:** [DISCLAIMER.md](DISCLAIMER.md) | [SECURITY.md](SECURITY.md)
+
+### Client Confidentiality
+
+Queries go through the Claude API. For privileged or confidential matters, use on-premise deployment.
+
+---
+
+## Development
+
+### Setup
+
+```bash
+git clone https://github.com/Ansvar-Systems/Italian-law-mcp
+cd Italian-law-mcp
+npm install
+npm run build
+npm test
+```
+
+### Running Locally
+
+```bash
+npm run dev                                       # Start MCP server
+npx @anthropic/mcp-inspector node dist/index.js   # Test with MCP Inspector
+```
+
+---
+
+## Related Projects: Complete Compliance Suite
+
+This server is part of **Ansvar's Compliance Suite** -- MCP servers that work together for end-to-end compliance coverage:
+
+### [@ansvar/eu-regulations-mcp](https://github.com/Ansvar-Systems/EU_compliance_MCP)
+**Query 49 EU regulations directly from Claude** -- GDPR, AI Act, DORA, NIS2, MiFID II, eIDAS, and more. Full regulatory text with article-level search. `npx @ansvar/eu-regulations-mcp`
+
+### [@ansvar/us-regulations-mcp](https://github.com/Ansvar-Systems/US_Compliance_MCP)
+**Query US federal and state compliance laws** -- HIPAA, CCPA, SOX, GLBA, FERPA, and more. `npx @ansvar/us-regulations-mcp`
+
+### [@ansvar/security-controls-mcp](https://github.com/Ansvar-Systems/security-controls-mcp)
+**Query 261 security frameworks** -- ISO 27001, NIST CSF, SOC 2, CIS Controls, SCF, and more. `npx @ansvar/security-controls-mcp`
+
+### [@ansvar/automotive-cybersecurity-mcp](https://github.com/Ansvar-Systems/Automotive-MCP)
+**Query UNECE R155/R156 and ISO 21434** -- Automotive cybersecurity compliance. `npx @ansvar/automotive-cybersecurity-mcp`
+
+**30+ national law MCPs** covering Australia, Brazil, Canada, China, Denmark, Finland, France, Germany, Ghana, Iceland, India, Ireland, Israel, Italy, Japan, Kenya, Netherlands, Nigeria, Norway, Singapore, Slovenia, South Korea, Sweden, Switzerland, Thailand, UAE, UK, and more.
+
+---
+
+## Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Priority areas:
+- Court case law expansion
+- EU cross-reference improvements
+- Historical statute versions and amendment tracking
+- Additional statutory instruments and regulations
+
+---
+
+## Roadmap
+
+- [x] Core statute database with FTS5 search
+- [x] EU/international law cross-references
+- [x] Vercel Streamable HTTP deployment
+- [x] npm package publication
+- [ ] Court case law expansion
+- [ ] Historical statute versions (amendment tracking)
+- [ ] Preparatory works / explanatory memoranda
+- [ ] Lower court and tribunal decisions
+
+---
+
+## Citation
+
+If you use this MCP server in academic research:
+
+```bibtex
+@software{italian_law_mcp_2025,
+  author = {Ansvar Systems AB},
+  title = {Italian Law MCP Server: AI-Powered Legal Research Tool},
+  year = {2025},
+  url = {https://github.com/Ansvar-Systems/Italian-law-mcp},
+  note = {Italian legal database with full-text search and EU cross-references}
+}
+```
+
+---
+
+## License
+
+Apache License 2.0. See [LICENSE](./LICENSE) for details.
+
+### Data Licenses
+
+- **Statutes & Legislation:** Italian Government (public domain (Gazzetta Ufficiale))
+- **EU Metadata:** EUR-Lex (EU public domain)
+
+---
+
+## About Ansvar Systems
+
+We build AI-accelerated compliance and legal research tools for the global market. This MCP server started as our internal reference tool -- turns out everyone building compliance tools has the same research frustrations.
+
+So we're open-sourcing it.
+
+**[ansvar.eu](https://ansvar.eu)** -- Stockholm, Sweden
+
+---
+
+<p align="center">
+  <sub>Built with care in Stockholm, Sweden</sub>
+</p>
