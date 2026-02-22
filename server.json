@@ -1,20 +1,43 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "eu.ansvar/italian-law-mcp",
-  "description": "Italian law database covering data protection (Codice Privacy / GDPR), cybercrime (Codice Penale), corporate liability (D.Lgs. 231/2001), digital administration (CAD), and NIS2 transposition with Italian full-text search",
+  "description": "Italian legislation via MCP — full-text search across statutes and provisions",
   "repository": {
     "url": "https://github.com/Ansvar-Systems/italian-law-mcp",
     "source": "github"
   },
   "homepage": "https://ansvar.eu",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "Apache-2.0",
+  "keywords": [
+    "italian-law",
+    "italy",
+    "legal",
+    "normattiva",
+    "codice-privacy",
+    "codice-penale",
+    "nis2",
+    "gdpr",
+    "compliance",
+    "mcp"
+  ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@ansvar/italian-law-mcp",
-      "version": "1.0.0",
-      "transport": { "type": "stdio" }
+      "version": "1.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "npm",
+      "identifier": "@ansvar/italian-law-mcp",
+      "version": "1.1.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "https://italian-law-mcp.vercel.app/mcp"
+      }
     }
   ]
 }

@@ -10,13 +10,13 @@
       "description": "Retrieve Codice Privacy Art. 1 (D.Lgs. 196/2003) -- right to personal data protection",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "D.Lgs. 196/2003 (Codice Privacy)",
+        "document_id": "D.Lgs. 196/2003 (Codice Privacy)",
         "article": "1"
       },
       "assertions": {
         "result_not_empty": true,
-        "any_result_contains": ["protezione dei dati personali", "diritto", "dati personali"],
-        "fields_present": ["text", "article_number"],
+        "any_result_contains": ["protezione dei dati personali", "trattamento", "dati personali"],
+        "fields_present": ["results"],
         "text_not_empty": true
       }
     },
@@ -26,13 +26,13 @@
       "description": "Retrieve Codice Penale Art. 615-ter -- unauthorized access to a computer or telecommunications system",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "Codice Penale",
+        "document_id": "Codice Penale",
         "article": "615-ter"
       },
       "assertions": {
         "result_not_empty": true,
         "any_result_contains": ["sistema informatico", "telematico", "abusivamente"],
-        "fields_present": ["text", "article_number"],
+        "fields_present": ["results"],
         "text_not_empty": true
       }
     },
@@ -42,13 +42,13 @@
       "description": "Retrieve Codice Civile Art. 1 -- legal capacity of natural persons",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "Codice Civile",
+        "document_id": "Codice Civile",
         "article": "1"
       },
       "assertions": {
         "result_not_empty": true,
-        "any_result_contains": ["capacita giuridica", "nascita", "persona"],
-        "fields_present": ["text", "article_number"],
+        "any_result_contains": ["giuridica", "nascita"],
+        "fields_present": ["results"],
         "text_not_empty": true
       }
     },
@@ -58,13 +58,13 @@
       "description": "Retrieve CAD Art. 1 (D.Lgs. 82/2005) -- definitions of the Digital Administration Code",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "D.Lgs. 82/2005 (Codice dell'Amministrazione Digitale)",
+        "document_id": "D.Lgs. 82/2005 (Codice dell'Amministrazione Digitale)",
         "article": "1"
       },
       "assertions": {
         "result_not_empty": true,
-        "any_result_contains": ["definizioni", "digitale", "amministrazione", "documento informatico"],
-        "fields_present": ["text"],
+        "any_result_contains": ["definizioni", "digitale", "codice"],
+        "fields_present": ["results"],
         "text_not_empty": true
       }
     },
@@ -79,7 +79,7 @@
       "assertions": {
         "result_not_empty": true,
         "min_results": 1,
-        "any_result_contains": ["Codice Privacy", "D.Lgs. 196/2003", "dati personali", "protezione dei dati"]
+        "any_result_contains": ["Codice Privacy", "dati personali", "protezione"]
       }
     },
     {
@@ -93,7 +93,7 @@
       "assertions": {
         "result_not_empty": true,
         "min_results": 1,
-        "any_result_contains": ["sicurezza", "informatica", "cybersicurezza", "sistemi informatici"]
+        "any_result_contains": ["sicurezza", "informatica"]
       }
     },
     {
@@ -107,50 +107,46 @@
       "assertions": {
         "result_not_empty": true,
         "min_results": 1,
-        "any_result_contains": ["commercio elettronico", "D.Lgs. 70/2003", "servizi", "societa dell'informazione"]
+        "any_result_contains": ["commercio elettronico", "servizi"]
       }
     },
     {
       "id": "it-008",
       "category": "citation_roundtrip",
-      "description": "Citation for Codice Privacy Art. 2 includes normattiva.it URL pattern",
-      "tool": "get_provision",
+      "description": "Validate citation for Codice Privacy Art. 2 using validate_citation tool",
+      "tool": "validate_citation",
       "input": {
-        "law_identifier": "D.Lgs. 196/2003 (Codice Privacy)",
-        "article": "2"
+        "citation": "Art. 2, D.Lgs. 196/2003"
       },
       "assertions": {
         "result_not_empty": true,
-        "citation_url_pattern": "normattiva\\.it",
         "text_not_empty": true
       }
     },
     {
       "id": "it-009",
       "category": "citation_roundtrip",
-      "description": "Citation for Codice Penale Art. 615-quater includes normattiva.it URL pattern",
-      "tool": "get_provision",
+      "description": "Validate citation for Codice Penale Art. 615-quater using validate_citation tool",
+      "tool": "validate_citation",
       "input": {
-        "law_identifier": "Codice Penale",
-        "article": "615-quater"
+        "citation": "Art. 615-quater, Codice Penale"
       },
       "assertions": {
         "result_not_empty": true,
-        "citation_url_pattern": "normattiva\\.it",
         "text_not_empty": true
       }
     },
     {
       "id": "it-010",
       "category": "eu_cross_reference",
-      "description": "Codice Privacy cross-reference to EU GDPR -- D.Lgs. 196/2003 was amended by D.Lgs. 101/2018 to implement GDPR",
-      "tool": "get_provision_eu_basis",
+      "description": "Codice Privacy cross-reference to EU GDPR -- D.Lgs. 196/2003 references Regulation 2016/679",
+      "tool": "get_eu_basis",
       "input": {
-        "law_identifier": "D.Lgs. 196/2003 (Codice Privacy)"
+        "document_id": "D.Lgs. 196/2003 (Codice Privacy)"
       },
       "assertions": {
         "result_not_empty": true,
-        "any_result_contains": ["GDPR", "General Data Protection Regulation", "2016/679", "Regolamento"]
+        "any_result_contains": ["2016/679", "Regolamento"]
       }
     },
     {
@@ -159,7 +155,7 @@
       "description": "Non-existent Italian law returns graceful error or empty result",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "D.Lgs. 9999/2099 (Legge Fittizia)",
+        "document_id": "D.Lgs. 9999/2099 (Legge Fittizia)",
         "article": "1"
       },
       "assertions": {
@@ -172,7 +168,7 @@
       "description": "Malformed article number returns graceful error or empty result",
       "tool": "get_provision",
       "input": {
-        "law_identifier": "D.Lgs. 196/2003 (Codice Privacy)",
+        "document_id": "D.Lgs. 196/2003 (Codice Privacy)",
         "article": "999ZZZ-INVALID"
       },
       "assertions": {

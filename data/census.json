@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "jurisdiction": "IT",
+  "portal": "normattiva.it",
+  "generated": "2026-02-22",
+  "total_laws": 10,
+  "total_provisions": 4798,
+  "laws": [
+    {
+      "id": "dl-105-2019",
+      "title": "Disposizioni in materia di perimetro di sicurezza nazionale cibernetica",
+      "provisions": 8
+    },
+    {
+      "id": "dlgs-101-2018",
+      "title": "Adeguamento al Regolamento (UE) 2016/679 (GDPR alignment)",
+      "provisions": 27
+    },
+    {
+      "id": "dlgs-138-2024",
+      "title": "Attuazione della direttiva (UE) 2022/2555 (NIS2)",
+      "provisions": 44
+    },
+    {
+      "id": "dlgs-196-2003",
+      "title": "Codice in materia di protezione dei dati personali (Codice Privacy)",
+      "provisions": 216
+    },
+    {
+      "id": "dlgs-206-2005",
+      "title": "Codice del consumo (Consumer Code)",
+      "provisions": 216
+    },
+    {
+      "id": "dlgs-231-2001",
+      "title": "Disciplina della responsabilità amministrativa delle persone giuridiche (D.Lgs. 231/2001)",
+      "provisions": 98
+    },
+    {
+      "id": "dlgs-70-2003",
+      "title": "Attuazione della direttiva 2000/31/CE (Commercio elettronico)",
+      "provisions": 22
+    },
+    {
+      "id": "dlgs-82-2005",
+      "title": "Codice dell'Amministrazione Digitale (CAD)",
+      "provisions": 121
+    },
+    {
+      "id": "rd-1398-1930",
+      "title": "Codice Penale",
+      "provisions": 898
+    },
+    {
+      "id": "rd-262-1942",
+      "title": "Codice Civile",
+      "provisions": 3148
+    }
+  ]
+}
