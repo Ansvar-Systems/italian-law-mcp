@@ -1,18 +1,23 @@
 #!/usr/bin/env tsx
 /**
- * Italian Law MCP — Ingestion Pipeline
+ * Italian Law MCP — Census-Driven Ingestion Pipeline
  *
- * Article-by-article ingestion from normattiva.it:
- *   1. For each key law, fetch the landing page to get session + TOC
- *   2. Extract individual article URLs from the TOC
- *   3. Fetch each article via the caricaArticolo AJAX endpoint
- *   4. Parse AKN HTML to extract article number, heading, and text
- *   5. Write seed JSON files for build-db.ts
+ * Article-by-article ingestion from normattiva.it, driven by census.json:
+ *   1. Read census.json for the complete list of ingestable acts
+ *   2. For each act not yet ingested, fetch the landing page to get session + TOC
+ *   3. Extract individual article URLs from the TOC
+ *   4. Fetch each article via the caricaArticolo AJAX endpoint
+ *   5. Parse AKN HTML to extract article number, heading, and text
+ *   6. Write seed JSON files for build-db.ts
+ *   7. Update census.json with ingestion results
  *
  * Usage:
- *   npm run ingest                    # Full ingestion
- *   npm run ingest -- --limit 5       # Test with 5 acts
- *   npm run ingest -- --force         # Re-fetch even if seed exists
+ *   npm run ingest                         # Ingest all pending acts from census
+ *   npm run ingest -- --limit 50           # Ingest at most 50 acts
+ *   npm run ingest -- --force              # Re-fetch even if seed exists
+ *   npm run ingest -- --type dlgs          # Ingest only decreti legislativi
+ *   npm run ingest -- --id dlgs-196-2003   # Ingest a single act by ID
+ *   npm run ingest -- --from 2020          # Ingest acts from 2020 onwards
  *
  * Data is sourced from normattiva.it (Italian Government Open Data).
  */
@@ -21,98 +26,81 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchAllArticles } from './lib/fetcher.js';
-import { parseArticleHtml, parseAttachmentArticleHtml, buildNormattivaUrn, type ActIndexEntry, type ParsedAct } from './lib/parser.js';
+import { parseArticleHtml, parseAttachmentArticleHtml, type ParsedAct } from './lib/parser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SEED_DIR = path.resolve(__dirname, '../data/seed');
+const CENSUS_PATH = path.resolve(__dirname, '../data/census.json');
+const DATA_DIR = path.resolve(__dirname, '../data');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Known key Italian laws for cybersecurity/data protection/compliance scope
+// Types from census
 // ─────────────────────────────────────────────────────────────────────────────
 
-const KEY_LAWS: ActIndexEntry[] = [
-  {
-    title: 'Codice in materia di protezione dei dati personali (Codice Privacy)',
-    type: 'dlgs', number: 196, year: 2003, date: '2003-06-30',
-    urn: 'urn:nir:stato:decreto.legislativo:2003-06-30;196',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-06-30;196',
-    updated: '',
-  },
-  {
-    title: 'Adeguamento al Regolamento (UE) 2016/679 (GDPR alignment)',
-    type: 'dlgs', number: 101, year: 2018, date: '2018-08-10',
-    urn: 'urn:nir:stato:decreto.legislativo:2018-08-10;101',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2018-08-10;101',
-    updated: '',
-  },
-  {
-    title: 'Attuazione della direttiva (UE) 2022/2555 (NIS2)',
-    type: 'dlgs', number: 138, year: 2024, date: '2024-09-04',
-    urn: 'urn:nir:stato:decreto.legislativo:2024-09-04;138',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2024-09-04;138',
-    updated: '',
-  },
-  {
-    title: 'Codice Penale',
-    type: 'rd', number: 1398, year: 1930, date: '1930-10-19',
-    urn: 'urn:nir:stato:regio.decreto:1930-10-19;1398',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1930-10-19;1398',
-    updated: '',
-  },
-  {
-    title: 'Codice Civile',
-    type: 'rd', number: 262, year: 1942, date: '1942-03-16',
-    urn: 'urn:nir:stato:regio.decreto:1942-03-16;262',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:regio.decreto:1942-03-16;262',
-    updated: '',
-  },
-  {
-    title: "Codice dell'Amministrazione Digitale (CAD)",
-    type: 'dlgs', number: 82, year: 2005, date: '2005-03-07',
-    urn: 'urn:nir:stato:decreto.legislativo:2005-03-07;82',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-03-07;82',
-    updated: '',
-  },
-  {
-    title: 'Disciplina della responsabilità amministrativa delle persone giuridiche (D.Lgs. 231/2001)',
-    type: 'dlgs', number: 231, year: 2001, date: '2001-06-08',
-    urn: 'urn:nir:stato:decreto.legislativo:2001-06-08;231',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2001-06-08;231',
-    updated: '',
-  },
-  {
-    title: 'Attuazione della direttiva 2000/31/CE (Commercio elettronico)',
-    type: 'dlgs', number: 70, year: 2003, date: '2003-04-09',
-    urn: 'urn:nir:stato:decreto.legislativo:2003-04-09;70',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-04-09;70',
-    updated: '',
-  },
-  {
-    title: 'Codice del consumo (Consumer Code)',
-    type: 'dlgs', number: 206, year: 2005, date: '2005-09-06',
-    urn: 'urn:nir:stato:decreto.legislativo:2005-09-06;206',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-09-06;206',
-    updated: '',
-  },
-  {
-    title: 'Disposizioni in materia di perimetro di sicurezza nazionale cibernetica',
-    type: 'dl', number: 105, year: 2019, date: '2019-09-21',
-    urn: 'urn:nir:stato:decreto-legge:2019-09-21;105',
-    url: 'https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto-legge:2019-09-21;105',
-    updated: '',
-  },
-];
+interface CensusLaw {
+  id: string;
+  title: string;
+  type: string;
+  number: number;
+  year: number;
+  date: string;
+  urn: string;
+  url: string;
+  codice_redazionale: string;
+  category: string;
+  classification: 'ingestable' | 'excluded' | 'pre_republic';
+  exclusion_reason?: string;
+  ingested: boolean;
+  provision_count: number;
+  ingestion_date: string | null;
+}
+
+interface CensusFile {
+  schema_version: string;
+  jurisdiction: string;
+  jurisdiction_name: string;
+  portal: string;
+  census_date: string;
+  agent: string;
+  year_range: { from: number; to: number };
+  summary: {
+    total_laws: number;
+    ingestable: number;
+    excluded: number;
+    pre_republic: number;
+    ingested: number;
+    by_type: Array<{
+      type: string;
+      type_label: string;
+      total: number;
+      ingestable: number;
+      excluded: number;
+    }>;
+  };
+  laws: CensusLaw[];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CLI argument parsing
 // ─────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(): { limit: number | null; force: boolean } {
+interface CliArgs {
+  limit: number | null;
+  force: boolean;
+  type: string | null;
+  id: string | null;
+  fromYear: number | null;
+}
+
+function parseArgs(): CliArgs {
   const args = process.argv.slice(2);
   let limit: number | null = null;
   let force = false;
+  let type: string | null = null;
+  let id: string | null = null;
+  let fromYear: number | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && args[i + 1]) {
@@ -120,33 +108,42 @@ function parseArgs(): { limit: number | null; force: boolean } {
       i++;
     } else if (args[i] === '--force') {
       force = true;
+    } else if (args[i] === '--type' && args[i + 1]) {
+      type = args[i + 1];
+      i++;
+    } else if (args[i] === '--id' && args[i + 1]) {
+      id = args[i + 1];
+      i++;
+    } else if (args[i] === '--from' && args[i + 1]) {
+      fromYear = parseInt(args[i + 1], 10);
+      i++;
     }
   }
 
-  return { limit, force };
+  return { limit, force, type, id, fromYear };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main ingestion
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function ingestAct(act: ActIndexEntry): Promise<{ provisions: number; failed: boolean }> {
-  const seedFile = path.join(SEED_DIR, `${act.type}_${act.number}_${act.year}.json`);
+async function ingestAct(law: CensusLaw): Promise<{ provisions: number; failed: boolean }> {
+  const seedFile = path.join(SEED_DIR, `${law.type}_${law.number}_${law.year}.json`);
 
   try {
     // Fetch all articles for this act
-    const articles = await fetchAllArticles(act.urn);
+    const articles = await fetchAllArticles(law.urn);
 
     if (articles.length === 0) {
       console.log(`    WARNING: No articles fetched, writing empty seed`);
       const emptySeed: ParsedAct = {
-        id: `${act.type}-${act.number}-${act.year}`,
-        type: act.type,
-        title: act.title,
-        short_name: act.title,
+        id: law.id,
+        type: law.type,
+        title: law.title,
+        short_name: law.title,
         status: 'in_force',
-        issued_date: act.date,
-        url: act.url,
+        issued_date: law.date,
+        url: law.url,
         provisions: [],
       };
       fs.writeFileSync(seedFile, JSON.stringify(emptySeed, null, 2));
@@ -167,13 +164,13 @@ async function ingestAct(act: ActIndexEntry): Promise<{ provisions: number; fail
     }
 
     const seed: ParsedAct = {
-      id: `${act.type}-${act.number}-${act.year}`,
-      type: act.type,
-      title: act.title,
-      short_name: act.title,
+      id: law.id,
+      type: law.type,
+      title: law.title,
+      short_name: law.title,
       status: 'in_force',
-      issued_date: act.date,
-      url: act.url,
+      issued_date: law.date,
+      url: law.url,
       provisions,
     };
 
@@ -187,13 +184,13 @@ async function ingestAct(act: ActIndexEntry): Promise<{ provisions: number; fail
 
     // Write empty seed so we don't block the build
     const emptySeed: ParsedAct = {
-      id: `${act.type}-${act.number}-${act.year}`,
-      type: act.type,
-      title: act.title,
-      short_name: act.title,
+      id: law.id,
+      type: law.type,
+      title: law.title,
+      short_name: law.title,
       status: 'in_force',
-      issued_date: act.date,
-      url: act.url,
+      issued_date: law.date,
+      url: law.url,
       provisions: [],
     };
     fs.writeFileSync(seedFile, JSON.stringify(emptySeed, null, 2));
@@ -201,57 +198,134 @@ async function ingestAct(act: ActIndexEntry): Promise<{ provisions: number; fail
   }
 }
 
-async function main(): Promise<void> {
-  const { limit, force } = parseArgs();
+function updateCensus(census: CensusFile, lawId: string, provisionCount: number): void {
+  const law = census.laws.find(l => l.id === lawId);
+  if (law) {
+    law.ingested = provisionCount > 0;
+    law.provision_count = provisionCount;
+    law.ingestion_date = new Date().toISOString().slice(0, 10);
+  }
+  // Update summary counts
+  census.summary.ingested = census.laws.filter(l => l.ingested).length;
+}
 
-  console.log('Italian Law MCP — Ingestion Pipeline');
-  console.log('=====================================\n');
+async function main(): Promise<void> {
+  const { limit, force, type, id, fromYear } = parseArgs();
+
+  // Load census
+  if (!fs.existsSync(CENSUS_PATH)) {
+    console.error('ERROR: census.json not found. Run census first: npx tsx scripts/census.ts');
+    process.exit(1);
+  }
+
+  const census: CensusFile = JSON.parse(fs.readFileSync(CENSUS_PATH, 'utf-8'));
+
+  console.log('Italian Law MCP — Census-Driven Ingestion Pipeline');
+  console.log('===================================================\n');
+  console.log(`  Census: ${census.summary.total_laws} total, ${census.summary.ingestable} ingestable, ${census.summary.ingested} already ingested`);
   console.log('  Strategy: Article-by-article fetch via caricaArticolo AJAX');
   if (limit) console.log(`  --limit ${limit}`);
   if (force) console.log(`  --force (re-fetching all)`);
+  if (type) console.log(`  --type ${type}`);
+  if (id) console.log(`  --id ${id}`);
+  if (fromYear) console.log(`  --from ${fromYear}`);
   console.log('');
 
   fs.mkdirSync(SEED_DIR, { recursive: true });
 
-  const toProcess = limit ? KEY_LAWS.slice(0, limit) : KEY_LAWS;
+  // Filter acts to process
+  let toProcess = census.laws.filter(l =>
+    l.classification === 'ingestable' || l.classification === 'pre_republic'
+  );
+
+  if (id) {
+    toProcess = toProcess.filter(l => l.id === id);
+  }
+  if (type) {
+    toProcess = toProcess.filter(l => l.type === type);
+  }
+  if (fromYear) {
+    toProcess = toProcess.filter(l => l.year >= fromYear);
+  }
+
+  // Sort: newer acts first (more relevant), then smaller acts first (faster)
+  toProcess.sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return a.number - b.number;
+  });
+
+  if (limit) {
+    toProcess = toProcess.slice(0, limit);
+  }
+
+  console.log(`  Acts to process: ${toProcess.length}\n`);
+
   let totalProvisions = 0;
   let processed = 0;
   let skipped = 0;
   let failed = 0;
+  let ingestedCount = 0;
+  const startTime = Date.now();
 
-  for (const act of toProcess) {
-    const seedFile = path.join(SEED_DIR, `${act.type}_${act.number}_${act.year}.json`);
+  for (const law of toProcess) {
+    const seedFile = path.join(SEED_DIR, `${law.type}_${law.number}_${law.year}.json`);
 
-    // Skip if seed exists and not forcing
+    // Skip if seed exists and not forcing (resume support)
     if (!force && fs.existsSync(seedFile)) {
       const existing = JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
-      if (existing.provisions && existing.provisions.length > 5) {
-        console.log(`  SKIP (cached, ${existing.provisions.length} provisions): ${act.title}`);
+      if (existing.provisions && existing.provisions.length > 0) {
         totalProvisions += existing.provisions.length;
+        // Update census if it wasn't marked as ingested
+        if (!law.ingested) {
+          updateCensus(census, law.id, existing.provisions.length);
+        }
         skipped++;
         processed++;
         continue;
       }
     }
 
-    console.log(`\n  [${processed + 1}/${toProcess.length}] ${act.title} (${act.type.toUpperCase()} ${act.number}/${act.year})`);
-    const result = await ingestAct(act);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+    const rate = processed > 0 ? (processed / (parseFloat(elapsed) || 1) * 60).toFixed(1) : '---';
+    console.log(`  [${processed + 1}/${toProcess.length}] ${law.title.substring(0, 80)} (${law.type.toUpperCase()} ${law.number}/${law.year}) [${elapsed}s, ${rate} acts/min]`);
+
+    const result = await ingestAct(law);
     totalProvisions += result.provisions;
-    if (result.failed) failed++;
+
+    if (result.failed) {
+      failed++;
+    } else {
+      ingestedCount++;
+    }
+
+    // Update census
+    updateCensus(census, law.id, result.provisions);
     processed++;
+
+    // Save census periodically (every 10 acts)
+    if (processed % 10 === 0) {
+      fs.writeFileSync(CENSUS_PATH, JSON.stringify(census, null, 2));
+    }
 
     // Pause between acts to be respectful
     if (processed < toProcess.length) {
-      console.log('  Pausing 2s between acts...');
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
 
+  // Final census save
+  fs.writeFileSync(CENSUS_PATH, JSON.stringify(census, null, 2));
+
+  const elapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+
   console.log('\n\nIngestion complete:');
   console.log(`  Acts processed: ${processed}`);
   console.log(`  Acts skipped (cached): ${skipped}`);
+  console.log(`  Acts ingested: ${ingestedCount}`);
   console.log(`  Acts failed: ${failed}`);
   console.log(`  Total provisions: ${totalProvisions}`);
+  console.log(`  Time: ${elapsed} min`);
+  console.log(`\n  Census: ${census.summary.ingested}/${census.summary.ingestable} ingested`);
 }
 
 main().catch(error => {
