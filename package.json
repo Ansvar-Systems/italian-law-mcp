@@ -1,7 +1,7 @@
 {
   "name": "@ansvar/italian-law-mcp",
   "mcpName": "eu.ansvar/italian-law-mcp",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "Italian Law MCP — Italian legislation via Model Context Protocol",
   "type": "module",
   "main": "dist/index.js",
@@ -9,8 +9,7 @@
     "italian-law-mcp": "dist/index.js"
   },
   "files": [
-    "dist",
-    "data/database.db"
+    "dist"
   ],
   "scripts": {
     "build": "tsc",

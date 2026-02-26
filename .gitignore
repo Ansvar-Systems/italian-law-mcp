@@ -1,7 +1,8 @@
 node_modules/
 dist/
 *.db
-!data/database.db
+# database.db is 374MB+ (58,985 laws) — too large for git
+# Rebuild from seeds: npm run build:db
 data/seed/
 data/source/
 .env

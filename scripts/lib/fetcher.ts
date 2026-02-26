@@ -13,7 +13,7 @@
  */
 
 const USER_AGENT = 'Italian-Law-MCP/1.0 (https://github.com/Ansvar-Systems/italian-law-mcp; hello@ansvar.ai)';
-const MIN_DELAY_MS = 800;
+const MIN_DELAY_MS = 150;
 const BASE_URL = 'https://www.normattiva.it';
 
 let lastRequestTime = 0;
@@ -169,24 +169,33 @@ export async function fetchAllArticles(urn: string): Promise<ArticleFetchResult[
     return [];
   }
 
-  // Step 3: Fetch each article
+  // Step 3: Fetch articles in concurrent batches of 4
   const results: ArticleFetchResult[] = [];
   let fetched = 0;
   let failed = 0;
+  const ARTICLE_CONCURRENCY = 4;
 
-  for (const url of articleUrls) {
-    try {
-      const result = await fetchWithSession(url);
-      if (result.status === 200 && result.body.length > 100) {
-        results.push({ url, html: result.body, status: result.status });
-      } else {
-        failed++;
+  for (let i = 0; i < articleUrls.length; i += ARTICLE_CONCURRENCY) {
+    const batch = articleUrls.slice(i, i + ARTICLE_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map(async (url) => {
+      try {
+        const result = await fetchWithSession(url);
+        if (result.status === 200 && result.body.length > 100) {
+          return { url, html: result.body, status: result.status } as ArticleFetchResult;
+        }
+        return null;
+      } catch (err) {
+        return null;
       }
-    } catch (err) {
-      failed++;
+    }));
+
+    for (const r of batchResults) {
+      if (r) results.push(r);
+      else failed++;
+      fetched++;
     }
-    fetched++;
-    if (fetched % 50 === 0) {
+
+    if (fetched % 50 < ARTICLE_CONCURRENCY) {
       console.log(`    Progress: ${fetched}/${articleUrls.length} fetched, ${failed} failed`);
     }
   }

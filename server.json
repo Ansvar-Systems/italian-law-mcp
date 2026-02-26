@@ -7,7 +7,7 @@
     "source": "github"
   },
   "homepage": "https://ansvar.eu",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "keywords": [
     "italian-law",
@@ -25,7 +25,7 @@
     {
       "registryType": "npm",
       "identifier": "@ansvar/italian-law-mcp",
-      "version": "1.1.1",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       }
@@ -33,7 +33,7 @@
     {
       "registryType": "npm",
       "identifier": "@ansvar/italian-law-mcp",
-      "version": "1.1.1",
+      "version": "2.0.0",
       "transport": {
         "type": "streamable-http",
         "url": "https://italian-law-mcp.vercel.app/mcp"

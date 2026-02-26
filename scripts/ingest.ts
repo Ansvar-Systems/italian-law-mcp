@@ -92,6 +92,7 @@ interface CliArgs {
   type: string | null;
   id: string | null;
   fromYear: number | null;
+  toYear: number | null;
 }
 
 function parseArgs(): CliArgs {
@@ -101,6 +102,7 @@ function parseArgs(): CliArgs {
   let type: string | null = null;
   let id: string | null = null;
   let fromYear: number | null = null;
+  let toYear: number | null = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && args[i + 1]) {
@@ -117,10 +119,13 @@ function parseArgs(): CliArgs {
     } else if (args[i] === '--from' && args[i + 1]) {
       fromYear = parseInt(args[i + 1], 10);
       i++;
+    } else if (args[i] === '--to' && args[i + 1]) {
+      toYear = parseInt(args[i + 1], 10);
+      i++;
     }
   }
 
-  return { limit, force, type, id, fromYear };
+  return { limit, force, type, id, fromYear, toYear };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -210,7 +215,7 @@ function updateCensus(census: CensusFile, lawId: string, provisionCount: number)
 }
 
 async function main(): Promise<void> {
-  const { limit, force, type, id, fromYear } = parseArgs();
+  const { limit, force, type, id, fromYear, toYear } = parseArgs();
 
   // Load census
   if (!fs.existsSync(CENSUS_PATH)) {
@@ -229,6 +234,7 @@ async function main(): Promise<void> {
   if (type) console.log(`  --type ${type}`);
   if (id) console.log(`  --id ${id}`);
   if (fromYear) console.log(`  --from ${fromYear}`);
+  if (toYear) console.log(`  --to ${toYear}`);
   console.log('');
 
   fs.mkdirSync(SEED_DIR, { recursive: true });
@@ -246,6 +252,9 @@ async function main(): Promise<void> {
   }
   if (fromYear) {
     toProcess = toProcess.filter(l => l.year >= fromYear);
+  }
+  if (toYear) {
+    toProcess = toProcess.filter(l => l.year <= toYear);
   }
 
   // Sort: newer acts first (more relevant), then smaller acts first (faster)
@@ -307,9 +316,9 @@ async function main(): Promise<void> {
       fs.writeFileSync(CENSUS_PATH, JSON.stringify(census, null, 2));
     }
 
-    // Pause between acts to be respectful
+    // Small pause between acts
     if (processed < toProcess.length) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
 
