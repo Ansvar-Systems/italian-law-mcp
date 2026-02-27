@@ -121,9 +121,15 @@ export function resolveExistingStatuteId(
     if (normMatch) return normMatch.id;
   }
 
-  // Try LIKE match on title or short_name
+  // Try exact title match first (case-insensitive)
+  const exactTitle = db.prepare(
+    "SELECT id FROM legal_documents WHERE LOWER(title) = LOWER(?) OR LOWER(short_name) = LOWER(?) LIMIT 1"
+  ).get(inputId, inputId) as { id: string } | undefined;
+  if (exactTitle) return exactTitle.id;
+
+  // Try LIKE match on title or short_name, preferring shorter titles (more likely to be the canonical document)
   const byTitle = db.prepare(
-    "SELECT id FROM legal_documents WHERE title LIKE ? OR short_name LIKE ? LIMIT 1"
+    "SELECT id FROM legal_documents WHERE title LIKE ? OR short_name LIKE ? ORDER BY LENGTH(title) ASC LIMIT 1"
   ).get(`%${inputId}%`, `%${inputId}%`) as { id: string } | undefined;
 
   return byTitle?.id ?? null;

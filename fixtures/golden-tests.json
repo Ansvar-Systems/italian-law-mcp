@@ -79,7 +79,7 @@
       "assertions": {
         "result_not_empty": true,
         "min_results": 1,
-        "any_result_contains": ["Codice Privacy", "dati personali", "protezione"]
+        "any_result_contains": ["protezione dei dati personali", "dati personali", "trattamento"]
       }
     },
     {
