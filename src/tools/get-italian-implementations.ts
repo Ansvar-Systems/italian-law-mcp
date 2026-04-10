@@ -4,6 +4,7 @@
 
 import type { Database } from '@ansvar/mcp-sqlite';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
+import { buildCitation, type CitationMetadata } from '../utils/citation.js';
 
 export interface GetItalianImplementationsInput {
   eu_document_id: string;
@@ -20,6 +21,7 @@ export interface GetItalianImplementationsResult {
     status: string;
     reference_type: string;
     is_primary: boolean;
+    _citation?: CitationMetadata;
   }>;
   total: number;
 }
@@ -75,9 +77,16 @@ export async function getItalianImplementations(
         status: r.status,
         reference_type: r.reference_type,
         is_primary: r.is_primary_implementation === 1,
+        _citation: buildCitation(
+          r.title || r.document_id,
+          r.title || r.document_id,
+          'get_provision',
+          { document_id: r.document_id },
+          'https://www.normattiva.it',
+        ),
       })),
       total: rows.length,
     },
-    _metadata: generateResponseMetadata(db),
+    _meta: generateResponseMetadata(db),
   };
 }

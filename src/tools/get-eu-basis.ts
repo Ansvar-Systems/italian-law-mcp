@@ -6,6 +6,7 @@ import type { Database } from '@ansvar/mcp-sqlite';
 import type { EUBasisDocument } from '../types/index.js';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
 import { resolveExistingStatuteId } from '../utils/statute-id.js';
+import { buildCitation } from '../utils/citation.js';
 
 export interface GetEUBasisInput {
   document_id: string;
@@ -97,6 +98,13 @@ export async function getEUBasis(
         regulation_count: euDocuments.filter(d => d.type === 'regulation').length,
       },
     },
-    _metadata: generateResponseMetadata(db),
+    _citation: buildCitation(
+      doc.title || doc.id,
+      doc.title || doc.id,
+      'get_eu_basis',
+      { document_id: input.document_id },
+      'https://www.normattiva.it',
+    ),
+    _meta: generateResponseMetadata(db),
   };
 }

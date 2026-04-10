@@ -1,0 +1,154 @@
+# =============================================================================
+# Monthly Rebuild — Re-ingest data from upstream and rebuild Docker image
+# =============================================================================
+#
+# Triggered on the 1st of each month at 03:00 UTC, and on manual dispatch.
+# Runs full ingestion pipeline then triggers a Docker image rebuild to GHCR.
+#
+# Required for live-source law MCPs: normattiva.it data changes over time
+# (amendments, new legislation) so the database must be rebuilt periodically.
+#
+# =============================================================================
+
+name: Monthly Rebuild
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
+jobs:
+  ingest:
+    name: Ingest and Rebuild Database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Run ingestion
+        id: ingest
+        shell: bash
+        run: |
+          set +e
+          npm run ingest 2>&1 | tee ingest.log
+          STATUS=${PIPESTATUS[0]}
+          echo "status_code=$STATUS" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" -eq 0 ]; then
+            echo "ingest_ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ingest_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Upload ingest log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingest-log
+          path: ingest.log
+          retention-days: 30
+
+      - name: Fail if ingestion failed
+        if: steps.ingest.outputs.ingest_ok != 'true'
+        run: |
+          echo "Ingestion failed with exit code ${{ steps.ingest.outputs.status_code }}"
+          exit 1
+
+      - name: Compress database for release
+        run: |
+          if [ -f data/database.db ]; then
+            gzip -k data/database.db -c > data/database.db.gz
+            echo "Compressed: $(du -sh data/database.db.gz | cut -f1)"
+          fi
+
+      - name: Upload database to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="db-$(date +%Y%m)"
+          # Create or update the monthly release
+          if gh release view "$TAG" &>/dev/null; then
+            gh release upload "$TAG" data/database.db.gz --clobber
+          else
+            gh release create "$TAG" data/database.db.gz \
+              --title "Database rebuild $(date +%Y-%m)" \
+              --notes "Automated monthly database rebuild on $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --latest=false
+          fi
+          echo "Uploaded database.db.gz to release $TAG"
+
+  build-image:
+    name: Rebuild Docker Image
+    needs: ingest
+    uses: ./.github/workflows/ghcr-build.yml
+    secrets: inherit
+
+  report:
+    name: Report Outcome
+    needs: [ingest, build-image]
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Monthly rebuild failed';
+            const body = [
+              `**Automated monthly rebuild:** ${new Date().toISOString()}`,
+              '',
+              '| Job | Status |',
+              '|-----|--------|',
+              `| ingest | ${{ needs.ingest.result }} |`,
+              `| build-image | ${{ needs.build-image.result }} |`,
+              '',
+              '### Next steps',
+              '1. Check the Actions run for details',
+              '2. Re-run manually once the issue is resolved: Actions → Monthly Rebuild → Run workflow',
+            ].join('\n');
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'rebuild-failure',
+            });
+
+            if (issues.length > 0) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                title,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['rebuild-failure', 'automated'],
+              });
+            }

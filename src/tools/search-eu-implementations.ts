@@ -4,6 +4,7 @@
 
 import type { Database } from '@ansvar/mcp-sqlite';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
+import { buildCitation, type CitationMetadata } from '../utils/citation.js';
 
 export interface SearchEUImplementationsInput {
   query?: string;
@@ -23,6 +24,7 @@ export interface SearchEUImplementationsResult {
     };
     italian_statute_count: number;
     primary_implementations: string[];
+    _citation?: CitationMetadata;
   }>;
   total_results: number;
 }
@@ -84,9 +86,16 @@ export async function searchEUImplementations(
         },
         italian_statute_count: r.italian_statute_count,
         primary_implementations: r.primary_implementations?.split(',').filter(Boolean) ?? [],
+        _citation: buildCitation(
+          r.short_name || r.title || r.id,
+          r.short_name || r.title || r.id,
+          'get_italian_implementations',
+          { eu_document_id: r.id },
+          null,
+        ),
       })),
       total_results: rows.length,
     },
-    _metadata: generateResponseMetadata(db),
+    _meta: generateResponseMetadata(db),
   };
 }

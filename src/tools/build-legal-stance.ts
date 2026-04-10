@@ -6,6 +6,7 @@ import type { Database } from '@ansvar/mcp-sqlite';
 import { buildFtsQueryVariants, buildLikePattern, sanitizeFtsInput } from '../utils/fts-query.js';
 import { resolveDocumentId } from '../utils/statute-id.js';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
+import { buildCitation, type CitationMetadata } from '../utils/citation.js';
 
 export interface BuildLegalStanceInput {
   query: string;
@@ -21,6 +22,7 @@ interface ProvisionHit {
   title: string | null;
   snippet: string;
   relevance: number;
+  _citation?: CitationMetadata;
 }
 
 export interface LegalStanceResult {
@@ -31,6 +33,21 @@ export interface LegalStanceResult {
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
+const BUILD_LEGAL_STANCE_DISCLAIMER =
+  'RESEARCH ONLY — not legal advice. Always verify citations against official Gazzetta Ufficiale publications before relying on this information.';
+
+function addCitations(rows: ProvisionHit[]): ProvisionHit[] {
+  return rows.map(row => ({
+    ...row,
+    _citation: buildCitation(
+      `${row.document_title} ${row.provision_ref}`,
+      `${row.provision_ref} — ${row.document_title}`,
+      'get_provision',
+      { document_id: row.document_id, article: row.provision_ref },
+      'https://www.normattiva.it',
+    ),
+  }));
+}
 
 export async function buildLegalStance(
   db: Database,
@@ -39,7 +56,7 @@ export async function buildLegalStance(
   if (!input.query || input.query.trim().length === 0) {
     return {
       results: { query: '', provisions: [], total_citations: 0 },
-      _metadata: generateResponseMetadata(db),
+      _meta: { ...generateResponseMetadata(db), disclaimer: BUILD_LEGAL_STANCE_DISCLAIMER },
     };
   }
 
@@ -55,8 +72,9 @@ export async function buildLegalStance(
     if (!resolved) {
       return {
         results: { query: input.query, provisions: [], total_citations: 0 },
-        _metadata: {
+        _meta: {
           ...generateResponseMetadata(db),
+          disclaimer: BUILD_LEGAL_STANCE_DISCLAIMER,
           note: `No document found matching "${input.document_id}"`,
         },
       };
@@ -96,11 +114,12 @@ export async function buildLegalStance(
         return {
           results: {
             query: input.query,
-            provisions: deduped,
+            provisions: addCitations(deduped),
             total_citations: deduped.length,
           },
-          _metadata: {
+          _meta: {
             ...generateResponseMetadata(db),
+            disclaimer: BUILD_LEGAL_STANCE_DISCLAIMER,
             ...(queryStrategy === 'fallback' ? { query_strategy: 'broadened' } : {}),
           },
         };
@@ -141,11 +160,12 @@ export async function buildLegalStance(
         return {
           results: {
             query: input.query,
-            provisions: deduplicateResults(rows, limit),
+            provisions: addCitations(deduplicateResults(rows, limit)),
             total_citations: rows.length,
           },
-          _metadata: {
+          _meta: {
             ...generateResponseMetadata(db),
+            disclaimer: BUILD_LEGAL_STANCE_DISCLAIMER,
             query_strategy: 'like_fallback',
           },
         };
@@ -157,7 +177,7 @@ export async function buildLegalStance(
 
   return {
     results: { query: input.query, provisions: [], total_citations: 0 },
-    _metadata: generateResponseMetadata(db),
+    _meta: { ...generateResponseMetadata(db), disclaimer: BUILD_LEGAL_STANCE_DISCLAIMER },
   };
 }
 
