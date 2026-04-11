@@ -24,6 +24,7 @@ import { searchEUImplementations, SearchEUImplementationsInput } from './search-
 import { getProvisionEUBasis, GetProvisionEUBasisInput } from './get-provision-eu-basis.js';
 import { validateEUCompliance, ValidateEUComplianceInput } from './validate-eu-compliance.js';
 import { getAbout, type AboutContext } from './about.js';
+import { generateResponseMeta } from '../utils/metadata.js';
 export type { AboutContext } from './about.js';
 
 const ABOUT_TOOL: Tool = {
@@ -423,7 +424,11 @@ export function registerTools(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return {
-        content: [{ type: 'text', text: `Error: ${message}` }],
+        content: [{ type: 'text', text: JSON.stringify({
+          _error_type: 'server_error',
+          message,
+          _meta: generateResponseMeta(db),
+        }, null, 2) }],
         isError: true,
       };
     }

@@ -5,7 +5,7 @@
 import type { Database } from '@ansvar/mcp-sqlite';
 import { resolveExistingStatuteId } from '../utils/statute-id.js';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
-import { buildProvisionCitation } from '../utils/citation.js';
+import { buildProvisionCitation, buildCitation } from '../utils/citation.js';
 
 export interface GetProvisionInput {
   document_id: string;
@@ -81,13 +81,13 @@ export async function getProvision(
           truncated: true,
           total,
         },
-        _metadata: generateResponseMetadata(db),
+        _meta: generateResponseMetadata(db),
       };
     }
 
     return {
       results: rows,
-      _metadata: generateResponseMetadata(db)
+      _meta: generateResponseMetadata(db)
     };
   }
 
@@ -128,7 +128,7 @@ export async function getProvision(
           null,
           null,
         ),
-        _metadata: generateResponseMetadata(db)
+        _meta: generateResponseMetadata(db)
       };
     }
   }
@@ -162,12 +162,20 @@ export async function getProvision(
         null,
         null,
       ),
-      _metadata: generateResponseMetadata(db)
+      _meta: generateResponseMetadata(db)
     };
   }
 
   return {
     results: null,
-    _metadata: generateResponseMetadata(db)
+    _error_type: 'not_found',
+    _citation: buildCitation(
+      `${input.document_id} ${provisionRef}`,
+      `${provisionRef} — ${input.document_id}`,
+      'get_provision',
+      { document_id: input.document_id, article: provisionRef },
+      'https://www.normattiva.it',
+    ),
+    _meta: generateResponseMetadata(db),
   };
 }

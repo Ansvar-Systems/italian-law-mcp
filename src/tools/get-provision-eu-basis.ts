@@ -6,6 +6,7 @@ import type { Database } from '@ansvar/mcp-sqlite';
 import type { ProvisionEUReference } from '../types/index.js';
 import { generateResponseMetadata, type ToolResponse } from '../utils/metadata.js';
 import { resolveExistingStatuteId } from '../utils/statute-id.js';
+import { buildCitation } from '../utils/citation.js';
 
 export interface GetProvisionEUBasisInput {
   document_id: string;
@@ -90,6 +91,13 @@ export async function getProvisionEUBasis(
         return ref;
       }),
     },
-    _metadata: generateResponseMetadata(db),
+    _citation: buildCitation(
+      `${input.document_id} ${input.provision_ref}`,
+      `${input.provision_ref} — ${input.document_id}`,
+      'get_provision_eu_basis',
+      { document_id: input.document_id, provision_ref: input.provision_ref },
+      'https://www.normattiva.it',
+    ),
+    _meta: generateResponseMetadata(db),
   };
 }

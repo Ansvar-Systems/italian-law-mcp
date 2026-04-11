@@ -87,6 +87,6 @@ export async function listSources(db: Database): Promise<ToolResponse<ListSource
         'Always verify against official Gazzetta Ufficiale publications when legal certainty is required.',
       ],
     },
-    _metadata: generateResponseMetadata(db),
+    _meta: generateResponseMetadata(db),
   };
 }
