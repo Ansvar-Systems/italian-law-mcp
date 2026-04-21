@@ -12,3 +12,5 @@ data/source/
 coverage/
 .claude/
 .serena/
+*-e
+*.bak
