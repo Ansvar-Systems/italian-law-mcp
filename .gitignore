@@ -12,3 +12,7 @@ data/source/
 coverage/
 .claude/
 .serena/
+
+# sed -i -e backup artifacts (BSD/macOS)
+*.md-e
+*.json-e
