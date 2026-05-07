@@ -1,27 +1,45 @@
-# Auto-generated Dockerfile for Law MCP HTTP transport.
-# Built by rollout-http-transport.sh from Ansvar-Architecture-Documentation.
+# MCP Server — Hetzner / Kubernetes
+# Image contract: docs/superpowers/specs/2026-04-25-mcp-infrastructure-standard-design.md §3
+# Profile: node-wasm-curated (runtime: @ansvar/mcp-sqlite WASM — no native runtime compile)
+# DB pattern: pre-staged (data/database.db is provisioned into the build context by
+# .github/workflows/ghcr-build.yml from the latest GitHub Release; not committed to git)
 
-# ── Stage 1: Build ──────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
+
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts && npm cache clean --force
+
 COPY tsconfig.json ./
-COPY src ./src
+COPY src/ ./src/
 RUN npm run build
 
-# ── Stage 2: Production ────────────────────────────────────────────────
-FROM node:20-alpine AS production
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
-COPY --from=builder /app/dist ./dist
-COPY data/database.db ./data/database.db
+FROM node:20-alpine AS runtime
 
-# Security: non-root user
-RUN addgroup -S nodejs && adduser -S nodejs -G nodejs \
- && chown -R nodejs:nodejs /app/data
+WORKDIR /app
+
+RUN addgroup -g 1001 -S nodejs \
+ && adduser -u 1001 -S nodejs -G nodejs
+
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --chown=nodejs:nodejs data/database.db ./data/database.db
+
+# /app/data must be writable by nodejs — SQLite writes -wal/-shm sidecars
+# even for read-only DBs unless journal_mode=delete is forced.
+RUN mkdir -p /app/data && chown -R nodejs:nodejs /app/data
+
 USER nodejs
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PORT=3000
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
+
 CMD ["node", "dist/http-server.js"]

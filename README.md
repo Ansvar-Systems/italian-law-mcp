@@ -1,384 +1,204 @@
-# Italian Law MCP Server
+# Italian Law MCP
 
-**The Normattiva alternative for the AI age.**
+MCP server for Italian law — statutes from www.normattiva.it with EU implementation
+mapping. Indexes the Codice Civile, Codice Penale, Codice Privacy (D.Lgs. 196/2003 +
+D.Lgs. 101/2018), the NIS2 transposition (D.Lgs. 138/2024), D.Lgs. 231/2001 corporate
+liability framework, and the Codice dell'Amministrazione Digitale.
 
-[![npm version](https://badge.fury.io/js/%40ansvar/italian-law-mcp.svg)](https://www.npmjs.com/package/@ansvar/italian-law-mcp)
-[![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![GitHub stars](https://img.shields.io/github/stars/Ansvar-Systems/Italian-law-mcp?style=social)](https://github.com/Ansvar-Systems/Italian-law-mcp)
-[![CI](https://github.com/Ansvar-Systems/Italian-law-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ansvar-Systems/Italian-law-mcp/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-spec--compliant-green.svg)](https://modelcontextprotocol.io)
+[![Jurisdiction](https://img.shields.io/badge/Jurisdiction-IT-informational.svg)](#coverage)
 
-Query **Italian legislation** -- covering data protection, cybersecurity, corporate law, and more -- directly from Claude, Cursor, or any MCP-compatible client.
+## What this is
 
-If you're building legal tech, compliance tools, or doing Italian legal research, this is your verified reference database.
+This server indexes the legal materials listed under **Sources** below and exposes them
+via the Model Context Protocol. Part of the Ansvar MCP fleet — source-available servers
+published for self-hosting.
 
-Built by [Ansvar Systems](https://ansvar.eu) -- Stockholm, Sweden
+It makes no outbound network calls except to the upstream sources during ingestion —
+no analytics, no phone-home.
 
----
+## Coverage
 
-## Why This Exists
+- **Corpus target:** 58,985 statutes, 267,838 provisions from Normattiva (the consolidated
+  national legislative database)
+- **Premium overlay:** 759,592 preparatory works from the Italian Senate (Akoma Ntoso XML,
+  CC-BY-4.0)
+- **Jurisdiction code:** `IT`
+- **Languages:** Italian only — no official translations
 
-Italian legal research is scattered across official government databases, commercial legal platforms, and institutional archives. Whether you're:
-- A **lawyer** validating citations in a brief or contract
-- A **compliance officer** checking if a statute is still in force
-- A **legal tech developer** building tools on Italian law
-- A **researcher** tracing legislative history
+The corpus is rebuilt from the upstream sources by `scripts/build-db.ts`; re-run
+`npm run build:db` periodically to refresh. The current free-tier ship contains a
+partial-ingestion snapshot (~361 statutes); full re-ingestion is tracked as separate
+work.
 
-...you shouldn't need dozens of browser tabs and manual PDF cross-referencing. Ask Claude. Get the exact provision. With context.
+See **Sources** below for source URLs, terms, and reuse conditions.
 
-This MCP server makes Italian law **searchable, cross-referenceable, and AI-readable**.
+## Why this exists
 
----
+LLMs answering compliance, security, or legal questions from training data alone will
+fabricate citations — confidently producing article numbers, statute names, and source
+URLs that do not exist, or that do not say what the model claims. This MCP exists so an
+agent can call a tool that returns the real text, the real identifier, and the real
+source URL straight from the indexed materials — and ground an answer rather than recall
+it.
 
-## Quick Start
+One MCP, one corpus. The point is composition.
 
-### Use Remotely (No Install Needed)
+The **Ansvar Gateway** ([ansvar.eu](https://ansvar.eu)) joins this MCP with the rest of
+the Ansvar fleet behind a single authenticated endpoint — 300+ servers covering legal
+jurisdictions, EU regulations, security frameworks, sector regulators, privacy-pattern
+catalogues, and risk-scoring tools. That lets an agent run cross-domain workflows that
+no single MCP can serve alone:
 
-> Connect directly to the hosted version -- zero dependencies, nothing to install.
+- **Threat model and TARA.** Threat enumeration → known component vulnerabilities →
+  severity scoring → applicable AI, cybersecurity, and automotive obligations → privacy
+  threats. Every finding traceable to its source.
+- **Gap analysis.** Target framework requirements → current-state evidence → unmet
+  obligations → remediation guidance and authority opinions. Every gap traceable to the
+  specific requirement that flagged it.
+- **Data Protection Impact Assessment.** Privacy regulation articles → national DPA
+  guidance (Garante per la protezione dei dati personali) → privacy-pattern catalogue →
+  applicable case law.
 
-**Endpoint:** `https://mcp.ansvar.eu/law-it/mcp`
+### Getting high-quality citations
 
-| Client | How to Connect |
-|--------|---------------|
-| **Claude.ai** | Settings > Connectors > Add Integration > paste URL |
-| **Claude Code** | `claude mcp add italian-law --transport http https://mcp.ansvar.eu/law-it/mcp` |
-| **Claude Desktop** | Add to config (see below) |
-| **GitHub Copilot** | Add to VS Code settings (see below) |
+Citation accuracy degrades when an agent's context fills up. Long inputs cause
+retrieval-stage drift — the model recalls claim text correctly but misattributes the
+source. Two practices keep accuracy high:
 
-**Claude Desktop** -- add to `claude_desktop_config.json`:
+1. **Focused first pass, checking-agent second pass.** Query a small, relevant set of
+   MCPs first, then run a separate agent whose only job is to re-resolve each citation
+   against the source MCP and flag any that no longer match. The checking agent uses the
+   same MCP tools as the synthesis agent.
+2. **Pull the source text verbatim when in doubt.** Every citation an agent emits points
+   back to a tool call against this server. You — or another agent — can call the same
+   tool with the same identifier and read the raw statute, article, or standard text
+   directly. If the verbatim text doesn't support what the agent claimed, the citation
+   was misused, regardless of whether the identifier was real.
 
-```json
-{
-  "mcpServers": {
-    "italian-law": {
-      "type": "url",
-      "url": "https://mcp.ansvar.eu/law-it/mcp"
-    }
-  }
-}
-```
+Both patterns work the same way self-hosted or through the gateway.
 
-**GitHub Copilot** -- add to VS Code `settings.json`:
-
-```json
-{
-  "github.copilot.chat.mcp.servers": {
-    "italian-law": {
-      "type": "http",
-      "url": "https://mcp.ansvar.eu/law-it/mcp"
-    }
-  }
-}
-```
-
-### Use Locally (npm)
-
-```bash
-npx @ansvar/italian-law-mcp
-```
-
-**Claude Desktop** -- add to `claude_desktop_config.json`:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "italian-law": {
-      "command": "npx",
-      "args": ["-y", "@ansvar/italian-law-mcp"]
-    }
-  }
-}
-```
-
-**Cursor / VS Code:**
-
-```json
-{
-  "mcp.servers": {
-    "italian-law": {
-      "command": "npx",
-      "args": ["-y", "@ansvar/italian-law-mcp"]
-    }
-  }
-}
-```
-
----
-
-## Example Queries
-
-Once connected, just ask naturally:
-
-- *"What does the Italian data protection law say about consent?"*
-- *"Search for cybersecurity requirements in Italian legislation"*
-- *"Is this statute still in force?"*
-- *"Find provisions about personal data in Italian law"*
-- *"What EU directives does this Italian law implement?"*
-- *"Which Italian laws implement the GDPR?"*
-- *"Validate this legal citation"*
-- *"Build a legal stance on data breach notification requirements"*
-
----
-
-## Key Legislation Covered
-
-| Law | Identifier | Domain | Key Topics |
-|-----|-----------|--------|------------|
-| **Codice Privacy** | D.Lgs. 196/2003 (amended by D.Lgs. 101/2018) | Data Protection | Personal data processing, Garante oversight, consent, data subject rights, GDPR implementation, international transfers |
-| **NIS2 Transposition** | D.Lgs. 138/2024 | Cybersecurity | Essential/important entity obligations, incident reporting, ACN oversight, supply chain security |
-| **Codice Penale (cybercrime)** | Arts. 615-ter to 615-quinquies | Cybercrime | Unauthorized access (615-ter), credential theft (615-quater), malware distribution (615-quinquies) |
-| **D.Lgs. 231/2001** | Corporate Criminal Liability | Corporate Governance | Organizational models, compliance programs, whistleblowing, cyber crime liability for companies |
-| **CAD** | D.Lgs. 82/2005 | Digital Administration | SPID/CIE digital identity, PEC certified email, digital documents, e-government services |
-| **Codice Civile** | R.D. 262/1942 | Civil Law | Legal capacity, obligations, contracts, property, personality rights |
-
----
-
----
-
-## Deployment Tier
-
-**MEDIUM** -- dual tier, free database bundled in npm package.
-
-| Tier | Platform | Database | Content |
-|------|----------|----------|---------|
-| **Free** | Vercel (Hobby) / npm (stdio) | Core legislation (~120-200 MB) | Key laws (Codice Privacy, Codice Penale cybercrime, Codice Civile, D.Lgs. 231/2001, CAD, NIS2 transposition), FTS search, EU cross-references |
-| **Professional** | Azure Container Apps / Docker / Local | Full database (~600 MB - 1 GB) | + All decreti legislativi and leggi, Garante decisions and guidance, Corte di Cassazione summaries, regional legislation references |
-
-The full database is larger due to the comprehensive scope of Italian legislation and the extensive body of Garante enforcement decisions. The free tier contains all key data protection, cybercrime, corporate liability, and digital administration legislation from Normattiva.
-
----
-
----
-
-## Database Estimates
-
-| Component | Free Tier | Full (Professional) |
-|-----------|-----------|---------------------|
-| Core codes and key laws | ~80-140 MB | ~80-140 MB |
-| All decreti and leggi | -- | ~400-600 MB |
-| Garante decisions and guidance | -- | ~80-150 MB |
-| Case law summaries | -- | ~80-150 MB |
-| Cross-references and metadata | ~5 MB | ~15 MB |
-| **Total** | **~120-200 MB** | **~600 MB - 1 GB** |
-
-**Delivery strategy:** Free-tier DB bundled in npm package (Strategy A -- fits within Vercel 250 MB function limit). If final size exceeds 250 MB after ingestion, switch to Strategy B (runtime download from GitHub Releases).
-
----
-
----
-
-## Available Tools (13)
-
-### Core Legal Research Tools (8)
+## Tools
 
 | Tool | Description |
-|------|-------------|
-| `search_legislation` | FTS5 full-text search across all provisions with BM25 ranking |
-| `get_provision` | Retrieve specific provision by statute + chapter/section |
-| `check_currency` | Check if statute is in force, amended, or repealed |
-| `validate_citation` | Validate citation against database (zero-hallucination check) |
-| `build_legal_stance` | Aggregate citations from statutes for a legal topic |
-| `format_citation` | Format citations per Italian conventions (full/short/pinpoint) |
-| `list_sources` | List all available statutes with metadata |
-| `about` | Server info, capabilities, and coverage summary |
+|---|---|
+| `about` | Server metadata, dataset statistics, freshness, and provenance |
+| `search_legislation` | Search Italian laws and codes by keyword (in Italian); BM25 ranking, provision-level results |
+| `get_provision` | Retrieve the full text of a specific article from an Italian law (or all articles if no article number) |
+| `list_sources` | Returns metadata about data sources backing this server (jurisdiction, authority, license) |
+| `validate_citation` | Validate an Italian legal citation against the database — does the cited law and provision exist? |
+| `build_legal_stance` | Build a citation set for a legal question by searching across all Italian legislation |
+| `format_citation` | Format an Italian legal citation per standard conventions |
+| `check_currency` | Is an Italian law or provision in force, amended, or repealed (abrogata)? |
+| `get_eu_basis` | Get EU legal basis (directives, regulations) for an Italian law |
+| `get_italian_implementations` | Find Italian laws that implement a specific EU directive or regulation |
+| `search_eu_implementations` | Search for EU instruments that have been implemented or referenced by Italian laws |
+| `get_provision_eu_basis` | Get EU legal basis for a specific provision within an Italian law (article-level) |
+| `validate_eu_compliance` | Check EU compliance status — detects references to repealed EU directives |
 
-### EU/International Law Integration Tools (5)
+## Two ways to use it
 
-| Tool | Description |
-|------|-------------|
-| `get_eu_basis` | Get EU directives/regulations for Italian statute |
-| `get_italian_implementations` | Find Italian laws implementing EU act |
-| `search_eu_implementations` | Search EU documents with Italian implementation counts |
-| `get_provision_eu_basis` | Get EU law references for specific provision |
-| `validate_eu_compliance` | Check implementation status of EU directives |
+**Self-host (free, Apache 2.0)** — clone this repo, run the build to compile the local
+SQLite database from the included data, point your MCP client at the local server.
+Instructions below.
 
----
+**Use the hosted gateway** — for production use against the curated, kept-fresh corpus
+across the full Ansvar MCP fleet, with citation enrichment and multi-jurisdiction
+fan-out — see [ansvar.eu](https://ansvar.eu).
 
-## Why This Works
+## Self-hosting
 
-**Verbatim Source Text (No LLM Processing):**
-- All statute text is ingested from official Italian government sources
-- Provisions are returned **unchanged** from SQLite FTS5 database rows
-- Zero LLM summarization or paraphrasing -- the database contains regulation text, not AI interpretations
+### Requirements
 
-**Smart Context Management:**
-- Search returns ranked provisions with BM25 scoring (safe for context)
-- Provision retrieval gives exact text by statute identifier + chapter/section
-- Cross-references help navigate without loading everything at once
+- Node.js 20 or newer
+- ~500 MB free disk for the built database (free tier)
 
-**Technical Architecture:**
-```
-Official Sources --> Parse --> SQLite --> FTS5 snippet() --> MCP response
-                     ^                       ^
-              Provision parser         Verbatim database query
-```
-
-### Traditional Research vs. This MCP
-
-| Traditional Approach | This MCP Server |
-|---------------------|-----------------|
-| Search official databases by statute number | Search by plain language |
-| Navigate multi-chapter statutes manually | Get the exact provision with context |
-| Manual cross-referencing between laws | `build_legal_stance` aggregates across sources |
-| "Is this statute still in force?" --> check manually | `check_currency` tool --> answer in seconds |
-| Find EU basis --> dig through EUR-Lex | `get_eu_basis` --> linked EU directives instantly |
-| No API, no integration | MCP protocol --> AI-native |
-
----
-
-## Data Sources & Freshness
-
-All content is sourced from authoritative Italian legal databases:
-
-- **[Normattiva](https://www.normattiva.it)** -- Official Italian government legal database
-
-**Verified data only** -- every citation is validated against official sources. Zero LLM-generated content.
-
----
-
-## Security
-
-This project uses multiple layers of automated security scanning:
-
-| Scanner | What It Does | Schedule |
-|---------|-------------|----------|
-| **CodeQL** | Static analysis for security vulnerabilities | Weekly + PRs |
-| **Semgrep** | SAST scanning (OWASP top 10, secrets, TypeScript) | Every push |
-| **Gitleaks** | Secret detection across git history | Every push |
-| **Trivy** | CVE scanning on filesystem and npm dependencies | Daily |
-| **Socket.dev** | Supply chain attack detection | PRs |
-| **Dependabot** | Automated dependency updates | Weekly |
-
-See [SECURITY.md](SECURITY.md) for the full policy and vulnerability reporting.
-
----
-
-## Important Disclaimers
-
-### Legal Advice
-
-> **THIS TOOL IS NOT LEGAL ADVICE**
->
-> Statute text is sourced from official Italian government publications. However:
-> - This is a **research tool**, not a substitute for professional legal counsel
-> - **Court case coverage is limited** -- do not rely solely on this for case law research
-> - **Verify critical citations** against primary sources for court filings
-> - **EU cross-references** are extracted from statute text, not EUR-Lex full text
-
-**Before using professionally, read:** [DISCLAIMER.md](DISCLAIMER.md) | [SECURITY.md](SECURITY.md)
-
-### Client Confidentiality
-
-Queries go through the Claude API. For privileged or confidential matters, use on-premise deployment.
-
----
-
-## Development
-
-### Setup
+### Install
 
 ```bash
-git clone https://github.com/Ansvar-Systems/Italian-law-mcp
-cd Italian-law-mcp
+git clone https://github.com/Ansvar-Systems/italian-law-mcp.git
+cd italian-law-mcp
 npm install
-npm run build
-npm test
 ```
 
-### Running Locally
+### Build the database
 
 ```bash
-npm run dev                                       # Start MCP server
-npx @anthropic/mcp-inspector node dist/index.js   # Test with MCP Inspector
+npm run build
+npm run build:db
 ```
 
----
+`build:db` compiles `data/source/` into `data/database.db` (the runtime SQLite the MCP
+queries). To refresh against the latest Normattiva snapshot, the ingestion script
+(`scripts/ingest.ts`) fetches from the upstream sources listed under **Sources** below;
+review the source's published terms before running ingestion in a commercial
+deployment.
 
-## Related Projects: Complete Compliance Suite
+Ingestion is a snapshot — your local copy goes stale until you re-run it. The hosted
+gateway corpus is refreshed continuously.
 
-This server is part of **Ansvar's Compliance Suite** -- MCP servers that work together for end-to-end compliance coverage:
+### Configure your MCP client
 
-### [@ansvar/eu-regulations-mcp](https://github.com/Ansvar-Systems/EU_compliance_MCP)
-**Query 49 EU regulations directly from Claude** -- GDPR, AI Act, DORA, NIS2, MiFID II, eIDAS, and more. Full regulatory text with article-level search. `npx @ansvar/eu-regulations-mcp`
-
-### [@ansvar/us-regulations-mcp](https://github.com/Ansvar-Systems/US_Compliance_MCP)
-**Query US federal and state compliance laws** -- HIPAA, CCPA, SOX, GLBA, FERPA, and more. `npx @ansvar/us-regulations-mcp`
-
-### [@ansvar/security-controls-mcp](https://github.com/Ansvar-Systems/security-controls-mcp)
-**Query 261 security frameworks** -- ISO 27001, NIST CSF, SOC 2, CIS Controls, SCF, and more. `npx @ansvar/security-controls-mcp`
-
-### [@ansvar/automotive-cybersecurity-mcp](https://github.com/Ansvar-Systems/Automotive-MCP)
-**Query UNECE R155/R156 and ISO 21434** -- Automotive cybersecurity compliance. `npx @ansvar/automotive-cybersecurity-mcp`
-
-**30+ national law MCPs** covering Australia, Brazil, Canada, China, Denmark, Finland, France, Germany, Ghana, Iceland, India, Ireland, Israel, Italy, Japan, Kenya, Netherlands, Nigeria, Norway, Singapore, Slovenia, South Korea, Sweden, Switzerland, Thailand, UAE, UK, and more.
-
----
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-Priority areas:
-- Court case law expansion
-- EU cross-reference improvements
-- Historical statute versions and amendment tracking
-- Additional statutory instruments and regulations
-
----
-
-## Roadmap
-
-- [x] Core statute database with FTS5 search
-- [x] EU/international law cross-references
-- [x] Vercel Streamable HTTP deployment
-- [x] npm package publication
-- [ ] Court case law expansion
-- [ ] Historical statute versions (amendment tracking)
-- [ ] Preparatory works / explanatory memoranda
-- [ ] Lower court and tribunal decisions
-
----
-
-## Citation
-
-If you use this MCP server in academic research:
-
-```bibtex
-@software{italian_law_mcp_2025,
-  author = {Ansvar Systems AB},
-  title = {Italian Law MCP Server: AI-Powered Legal Research Tool},
-  year = {2025},
-  url = {https://github.com/Ansvar-Systems/Italian-law-mcp},
-  note = {Italian legal database with full-text search and EU cross-references}
+```json
+{
+  "mcpServers": {
+    "italian-law-mcp": {
+      "command": "node",
+      "args": ["/abs/path/to/italian-law-mcp/dist/index.js"]
+    }
+  }
 }
 ```
 
----
+For HTTP transport (Docker / Kubernetes), the runtime entry point is
+`dist/http-server.js` listening on `PORT` (default 3000) at `/mcp`.
+
+## Sources
+
+| Source | Source URL | Terms / license URL | License basis | Attribution required | Commercial use | Redistribution / caching | Notes |
+|---|---|---|---|---|---|---|---|
+| Normattiva — consolidated Italian legislation | https://www.normattiva.it/ | [Note legali](https://www.normattiva.it/static/note_legali.html) | Public domain — Italian Copyright Law (Legge 633/1941) Art. 5 excludes official acts of the State from copyright | Recommended | Conditional | Conditional | Italian statutes themselves are not copyrighted; Normattiva's site terms restrict bulk reuse of the database structure. Verify use case. |
+| Italian Senate — preparatory works (Akoma Ntoso XML) | https://dati.senato.it/ | [License](https://dati.senato.it/) | CC-BY-4.0 | Required | Yes | Yes | 759,592 preparatory works; included only in the premium overlay |
+
+### Upstream license constraints
+
+- **Normattiva.** Italian official acts (statutes, decrees) fall outside copyright under
+  Art. 5 Legge 633/1941 — the texts themselves are public domain. Normattiva's published
+  terms (`note_legali.html`) restrict bulk reuse of the *database structure*; reproducing
+  the underlying legislative texts is permitted, but bulk re-publication of Normattiva's
+  curated/consolidated database may not be. The included ingestion script extracts
+  legislative text, not the database structure.
+- **Italian Senate (premium overlay).** Akoma Ntoso XML feeds at `dati.senato.it` are
+  licensed CC-BY-4.0. Attribution is required; commercial reuse and redistribution are
+  permitted. The premium overlay is not redistributed under this repository's Apache 2.0
+  license — see [ansvar.eu](https://ansvar.eu) for the hosted gateway corpus.
+
+## What this repository does not provide
+
+This repository's source — the MCP server code, schema, and ingestion script — is
+licensed under Apache 2.0. The license below covers the code in this repository only;
+it does not extend to the upstream legal materials.
+
+Running ingestion may download, cache, transform, and index materials from the listed
+upstream sources. You are responsible for confirming that your use of those materials
+complies with the source terms, attribution requirements, robots/rate limits, database
+rights, copyright rules, and any commercial-use or redistribution limits that apply in
+your jurisdiction.
 
 ## License
 
-Apache License 2.0. See [LICENSE](./LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE). Commercial use, modification, and redistribution of
+**the source code in this repository** are permitted under that license. The license
+does not extend to upstream legal materials downloaded by the ingestion script; those
+remain governed by the source jurisdictions' own publishing terms (see Sources above).
 
-### Data Licenses
+## The Ansvar gateway
 
-- **Statutes & Legislation:** Italian Government (public domain (Gazzetta Ufficiale))
-- **EU Metadata:** EUR-Lex (EU public domain)
-
----
-
-## About Ansvar Systems
-
-We build AI-accelerated compliance and legal research tools for the global market. This MCP server started as our internal reference tool -- turns out everyone building compliance tools has the same research frustrations.
-
-So we're open-sourcing it.
-
-**[ansvar.eu](https://ansvar.eu)** -- Stockholm, Sweden
+If you'd rather not self-host, [ansvar.eu](https://ansvar.eu) provides this MCP plus the
+full Ansvar fleet through a single authenticated endpoint, with the curated production
+corpus, multi-MCP query orchestration, and citation enrichment.
 
 ---
 
-<p align="center">
-  <sub>Built with care in Stockholm, Sweden</sub>
-</p>
+Issues: [github.com/Ansvar-Systems/italian-law-mcp/issues](https://github.com/Ansvar-Systems/italian-law-mcp/issues) · Security: <security@ansvar.eu>
