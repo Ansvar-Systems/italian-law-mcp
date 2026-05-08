@@ -135,13 +135,33 @@ const isNightly = process.env['CONTRACT_MODE'] === 'nightly';
 
 const dbPath =
   process.env['ITALIAN_LAW_DB_PATH'] ?? join(__dirname, '..', '..', 'data', 'database.db');
-const dbAvailable = existsSync(dbPath);
+const dbExists = existsSync(dbPath);
+
+// CI-friendly: also skip when the DB is present but unpopulated.
+// `npm run build:db` in CI produces an empty schema-only DB (the seed data is
+// gitignored and only present after a real ingestion). Without this guard the
+// content-bearing contract tests fail with "expected '' to contain ...".
+let dbHasContent = false;
+if (dbExists) {
+  try {
+    const probe = new Database(dbPath, { readonly: true });
+    const row = probe.prepare('SELECT COUNT(*) AS n FROM legal_documents').get() as { n: number };
+    dbHasContent = row.n > 0;
+    probe.close();
+  } catch {
+    dbHasContent = false;
+  }
+}
+const dbAvailable = dbExists && dbHasContent;
 
 if (!dbAvailable) {
   // eslint-disable-next-line no-console
   console.warn(
-    `[contract] Skipping contract tests: database not found at ${dbPath}. ` +
-      `Run 'npm run ingest' to build it, or download the release artifact.`,
+    `[contract] Skipping contract tests: ` +
+      (!dbExists
+        ? `database not found at ${dbPath}.`
+        : `database at ${dbPath} is empty (no legal_documents).`) +
+      ` Run 'npm run ingest' to populate it, or download the release artifact.`,
   );
 }
 
