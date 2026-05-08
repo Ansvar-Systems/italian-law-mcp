@@ -59,7 +59,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if Dockerfile copies any .db file
-          DB_FILES=$(grep -oP 'COPY\s+\K(data/\S+\.db)' Dockerfile 2>/dev/null || true)
+          DB_FILES=$(grep -oP '^COPY .*?\K(data/\S+\.db)' Dockerfile 2>/dev/null || true)
           if [ -z "$DB_FILES" ]; then
             echo "No .db files in Dockerfile COPY, skipping"
             exit 0
