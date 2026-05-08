@@ -7,7 +7,6 @@ data/seed/
 data/source/
 .env
 .env.*
-.vercel
 .DS_Store
 coverage/
 .claude/
