@@ -89,16 +89,28 @@ jobs:
               exit 1
             fi
 
-            echo "Downloading database.db.gz from release $TAG..."
+            echo "Downloading database.db.gz + sha256 from release $TAG..."
             mkdir -p data
-            if gh release download "$TAG" -p "database.db.gz" -D data/ 2>/dev/null; then
-              gunzip -f data/database.db.gz
-              echo "OK: Downloaded $(du -sh data/database.db | cut -f1) from release $TAG"
-            else
-              echo "ERROR: Could not download database.db.gz from release $TAG"
+            if ! gh release download "$TAG" -p "database.db.gz" -p "database.db.gz.sha256" -D data/ 2>/dev/null; then
+              echo "ERROR: Could not download database.db.gz / .sha256 from release $TAG"
               exit 1
             fi
+            (cd data && sha256sum -c database.db.gz.sha256) || { echo "ERROR: sha256 mismatch"; exit 1; }
+            gunzip -f data/database.db.gz
+            echo "OK: Downloaded + verified $(du -sh data/database.db | cut -f1) from release $TAG"
           done
+
+      - name: Verify database
+        run: |
+          if [ ! -f scripts/verify-db.cjs ]; then
+            echo "scripts/verify-db.cjs missing; skipping (older workflow versions)"
+            exit 0
+          fi
+          if [ ! -f data/database.db ]; then
+            echo "data/database.db missing after provisioning; abort"
+            exit 1
+          fi
+          node scripts/verify-db.cjs
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

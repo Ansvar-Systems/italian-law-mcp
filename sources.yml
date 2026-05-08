@@ -9,13 +9,15 @@ sources:
     official_portal: "https://www.normattiva.it"
     canonical_identifier: "Gazzetta Ufficiale number and date, or legislative act type + number + year (e.g., D.Lgs. 196/2003)"
     retrieval_method: "HTML_SCRAPE"
-    api_documentation: "N/A (structured HTML, no public API)"
+    api_documentation: "Bulk Akoma Ntoso XML available at dati.normattiva.it (open-data portal launched 2026-02-24); ingestion has not yet migrated to it (Phase 2 work). Current corpus was produced via HTML scrape of normattiva.it caricaArticolo AJAX endpoint."
     update_frequency: "weekly"
-    last_ingested: "PENDING_FIRST_INGEST"
+    last_ingested: "2026-03-08"
     license_or_terms:
-      type: "Italian Government Open Data"
-      url: "https://www.normattiva.it/informazioni"
-      summary: "Italian legislation published on Normattiva is freely accessible; legal texts are public domain under Italian law; Normattiva provides consolidated (vigente) and historical versions of all legislative acts; reuse of legal text is unrestricted"
+      type: "CC-BY-4.0"
+      url: "https://dati.normattiva.it/Dati-disponibili"
+      terms_url: "https://www.normattiva.it/staticPage/legal"
+      summary: "As of 1 January 2026, Normattiva data is licensed under Creative Commons CC BY 4.0 with attribution requirement, declared on dati.normattiva.it/Dati-disponibili. Underlying Italian statutory text is also non-copyrightable per Art. 5 of Legge 22 aprile 1941 n. 633 ('atti ufficiali dello Stato'). Pre-2025-07-01 the experimental phase used CC BY 4.0 NC (non-commercial); the 2026-05-08 corpus was scraped during the post-2026-01-01 commercial-permitted phase."
+      verified_at: "2026-05-08"
     coverage:
       scope: "All Italian legislation including Codice Privacy (D.Lgs. 196/2003 as amended by D.Lgs. 101/2018 for GDPR alignment), NIS2 transposition (D.Lgs. 138/2024), Codice Civile, Codice Penale (cybercrime Arts. 615-ter ff.), D.Lgs. 231/2001 (corporate criminal liability), CAD (Codice dell'Amministrazione Digitale, D.Lgs. 82/2005), Codice del Consumo (D.Lgs. 206/2005), D.Lgs. 70/2003 (e-commerce), and all decreti legislativi, decreti-legge, and leggi ordinarie"
       limitations: "Regional legislation not covered; historical versions prior to digitisation may be incomplete; no public API (HTML scraping required); consolidated texts may lag behind latest Gazzetta Ufficiale publication; Italian language only (no official translations)"
@@ -25,7 +27,7 @@ sources:
 data_freshness:
   automated_checks: true
   check_frequency: "weekly"
-  last_verified: "PENDING_FIRST_INGEST"
+  last_verified: "2026-05-08"
 
 # Notes:
 # - Normattiva (normattiva.it) is the authoritative, free source for all Italian
@@ -54,3 +56,12 @@ data_freshness:
 #   secrecy of correspondence and communications
 # - The Gazzetta Ufficiale (Official Gazette) is the authoritative publication
 #   vehicle for all Italian legislation
+# - Production data ships from a versioned GitHub Release asset (database.db.gz
+#   on tag v2.0.0). The HTML-scrape ingestion pipeline (scripts/ingest.ts) is
+#   retained for reference but not run in CI. Phase 2 work will replace it with
+#   bulk Akoma Ntoso XML from dati.normattiva.it once that portal documents its
+#   endpoints (community is still figuring them out as of 2026-05-08).
+# - License verified primary-source 2026-05-08 at
+#   https://dati.normattiva.it/Dati-disponibili (footer link "Licenza d'uso").
+#   CC BY 4.0 is in effect from 2026-01-01; pre-2025-07-01 experimental phase
+#   used CC BY 4.0 NC. The 2026-03-08 ingest is in the post-2026-01-01 phase.
