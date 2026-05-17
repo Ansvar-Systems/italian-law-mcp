@@ -13,11 +13,13 @@ sources:
     update_frequency: "weekly"
     last_ingested: "2026-03-08"
     license_or_terms:
-      type: "CC-BY-4.0"
-      url: "https://dati.normattiva.it/Dati-disponibili"
-      terms_url: "https://www.normattiva.it/staticPage/legal"
-      summary: "As of 1 January 2026, Normattiva data is licensed under Creative Commons CC BY 4.0 with attribution requirement, declared on dati.normattiva.it/Dati-disponibili. Underlying Italian statutory text is also non-copyrightable per Art. 5 of Legge 22 aprile 1941 n. 633 ('atti ufficiali dello Stato'). Pre-2025-07-01 the experimental phase used CC BY 4.0 NC (non-commercial); the 2026-05-08 corpus was scraped during the post-2026-01-01 commercial-permitted phase."
-      verified_at: "2026-05-08"
+      type: "Italian-LDA-Art-5"
+      ansvar_code: "Italian-LDA-Art-5"
+      url: "https://www.normattiva.it/staticPage/legal"
+      url_pattern: '^https?://(?:www\.)?normattiva\.it/.+'
+      publisher_overlay: "CC-BY-4.0 (dati.normattiva.it/Dati-disponibili, from 2026-01-01)"
+      summary: "Primary basis: Legge 633/1941 Art. 5 — statutes, decrees, and official acts of the State and public administrations are outside copyright scope ('atti ufficiali dello Stato'). NARROW carve-out: court judgments are NOT covered by Art. 5 and require a separate basis (D.Lgs. 36/2006 PSI or court-specific terms). Normattiva publisher also declares CC-BY-4.0 since 2026-01-01 (overlay). Pre-2025-07-01 was CC-BY-4.0-NC; 2026-03-08 ingest is post-2026-01-01 phase. See infrastructure/attribution-licenses.json Italian-LDA-Art-5."
+      verified_at: "2026-05-17"
     coverage:
       scope: "All Italian legislation including Codice Privacy (D.Lgs. 196/2003 as amended by D.Lgs. 101/2018 for GDPR alignment), NIS2 transposition (D.Lgs. 138/2024), Codice Civile, Codice Penale (cybercrime Arts. 615-ter ff.), D.Lgs. 231/2001 (corporate criminal liability), CAD (Codice dell'Amministrazione Digitale, D.Lgs. 82/2005), Codice del Consumo (D.Lgs. 206/2005), D.Lgs. 70/2003 (e-commerce), and all decreti legislativi, decreti-legge, and leggi ordinarie"
       limitations: "Regional legislation not covered; historical versions prior to digitisation may be incomplete; no public API (HTML scraping required); consolidated texts may lag behind latest Gazzetta Ufficiale publication; Italian language only (no official translations)"
