@@ -210,16 +210,41 @@ For HTTP transport (Docker / Kubernetes), the runtime entry point is
 
 ### Upstream license constraints
 
+Ansvar attribution code: **`Italian-LDA-Art-5`** (declared in
+`infrastructure/attribution-licenses.json` in the Ansvar architecture-documentation
+repo). The publisher (Normattiva) also declares **CC-BY-4.0** as an overlay since
+2026-01-01.
+
 - **Normattiva.** Italian official acts (statutes, decrees) fall outside copyright under
-  Art. 5 Legge 633/1941 — the texts themselves are public domain. Normattiva's published
-  terms (`note_legali.html`) restrict bulk reuse of the *database structure*; reproducing
-  the underlying legislative texts is permitted, but bulk re-publication of Normattiva's
-  curated/consolidated database may not be. The included ingestion script extracts
-  legislative text, not the database structure.
+  Art. 5 Legge 633/1941 — `atti ufficiali dello Stato e delle Amministrazioni pubbliche`.
+  Normattiva's published terms (`note_legali.html`) restrict bulk reuse of the *database
+  structure*; reproducing the underlying legislative texts is permitted, but bulk
+  re-publication of Normattiva's curated/consolidated database may not be. The included
+  ingestion script extracts legislative text, not the database structure.
 - **Italian Senate (premium overlay).** Akoma Ntoso XML feeds at `dati.senato.it` are
   licensed CC-BY-4.0. Attribution is required; commercial reuse and redistribution are
   permitted. The premium overlay is not redistributed under this repository's Apache 2.0
   license — see [ansvar.eu](https://ansvar.eu) for the hosted gateway corpus.
+
+### Coverage scope (narrow carve-out)
+
+Italian Art. 5 is **NARROW**. Coverage is asymmetric across material types:
+
+- **IN-SCOPE under Art. 5:** statutes (`leggi`), decrees (`decreti legislativi`,
+  `decreti-legge`), official acts of the State, decrees and decisions of public
+  administrations in their administrative-act capacity, ministerial circulars.
+- **OUT-OF-SCOPE under Art. 5:** court judgments (`sentenze`) — Italian doctrine
+  consistently treats court judgments as outside `atti ufficiali` for Art. 5
+  purposes. A court-decisions tier would need a separate basis (D.Lgs. 36/2006
+  PSI implementing the EU PSI Directive, or court-specific terms).
+- **Why this matters:** This MCP currently ships the statute tier (Normattiva)
+  under `Italian-LDA-Art-5`. Case-law tier (Cassazione, Corte Costituzionale,
+  giustizia amministrativa) is not in scope and would require a separate
+  licensing declaration before ingestion.
+
+See `docs/audits/2026-05-17-eu-copyright-statutory-works-batch-1b-DE-IE-IT-NL-ES.md`
+§3 in the Ansvar architecture-documentation repo for the verbatim Art. 5 text
+and the coverage analysis.
 
 ## What this repository does not provide
 
